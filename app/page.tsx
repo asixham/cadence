@@ -33,6 +33,7 @@ function YouTubeFrameStudio() {
   const [hasVideo, setHasVideo] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [useDirectPlayback, setUseDirectPlayback] = useState(false);
 
   const reactId = useId();
   const playerElementId = useMemo(
@@ -269,20 +270,145 @@ function YouTubeFrameStudio() {
   const handleStepForward = useCallback(() => seekBy(1), [seekBy]);
   const handleStepBackward = useCallback(() => seekBy(-1), [seekBy]);
 
-  const togglePlayback = useCallback(() => {
-    if (isPlaying) {
-      setIsPlaying(false);
-      setStatus("Paused");
-      stopFrameLoop();
-    } else {
-      if (currentFrameRef.current >= totalFramesRef.current - 1) {
-        currentFrameRef.current = 0;
+  const startDirectVideoLoop = useCallback(() => {
+    stopDirectVideoLoop();
+    const tick = () => {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const ctx = ctxRef.current;
+      
+      if (!video || !canvas || !ctx || video.paused || video.ended) {
+        return;
       }
-      setIsPlaying(true);
-      setStatus("Playing");
-      startFrameLoop();
+      
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Calculate aspect ratio and fit video to canvas
+      const videoAspect = video.videoWidth / video.videoHeight;
+      const canvasAspect = canvas.width / canvas.height;
+      
+      let drawWidth, drawHeight, offsetX, offsetY;
+      
+      if (videoAspect > canvasAspect) {
+        drawWidth = canvas.width;
+        drawHeight = canvas.width / videoAspect;
+        offsetX = 0;
+        offsetY = (canvas.height - drawHeight) / 2;
+      } else {
+        drawHeight = canvas.height;
+        drawWidth = canvas.height * videoAspect;
+        offsetX = (canvas.width - drawWidth) / 2;
+        offsetY = 0;
+      }
+      
+      // Draw current video frame
+      ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
+      
+      // Update overlay with current time
+      currentFrameRef.current = Math.floor(video.currentTime * FPS);
+      drawOverlay();
+      
+      animationFrameRef.current = requestAnimationFrame(tick);
+    };
+    
+    animationFrameRef.current = requestAnimationFrame(tick);
+  }, [drawOverlay]);
+
+  const stopDirectVideoLoop = useCallback(() => {
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
-  }, [isPlaying, startFrameLoop, stopFrameLoop]);
+  }, []);
+
+  const togglePlayback = useCallback(() => {
+    if (useDirectPlayback) {
+      // Direct video playback mode
+      const video = videoRef.current;
+      if (!video) return;
+
+      if (video.paused) {
+        video.play();
+        setIsPlaying(true);
+        setStatus("Playing video directly");
+        startDirectVideoLoop();
+      } else {
+        video.pause();
+        setIsPlaying(false);
+        setStatus("Paused video");
+        stopDirectVideoLoop();
+      }
+    } else {
+      // Frame-based playback mode
+      if (isPlaying) {
+        setIsPlaying(false);
+        setStatus("Paused");
+        stopFrameLoop();
+      } else {
+        if (currentFrameRef.current >= totalFramesRef.current - 1) {
+          currentFrameRef.current = 0;
+        }
+        setIsPlaying(true);
+        setStatus("Playing");
+        startFrameLoop();
+      }
+    }
+  }, [isPlaying, useDirectPlayback, startFrameLoop, stopFrameLoop, startDirectVideoLoop, stopDirectVideoLoop]);
+
+  const loadTestVideo = useCallback(async () => {
+    setStatus("Loading test video...");
+    setHasVideo(false);
+    setIsPlaying(false);
+    setIsLoading(true);
+    stopFrameLoop();
+    stopDirectVideoLoop();
+    setUseDirectPlayback(true);
+
+    try {
+      const video = videoRef.current;
+      if (!video) {
+        throw new Error('Video element not found');
+      }
+      
+      video.src = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+      video.crossOrigin = 'anonymous';
+      
+      await new Promise((resolve, reject) => {
+        const handleLoadedMetadata = () => {
+          video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+          video.removeEventListener('error', handleError);
+          resolve(void 0);
+        };
+        
+        const handleError = () => {
+          video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+          video.removeEventListener('error', handleError);
+          reject(new Error('Failed to load video'));
+        };
+        
+        video.addEventListener('loadedmetadata', handleLoadedMetadata);
+        video.addEventListener('error', handleError);
+      });
+      
+      const duration = video.duration;
+      videoInfoRef.current = {
+        width: video.videoWidth || 1280,
+        height: video.videoHeight || 720,
+        fps: FPS,
+        duration: duration
+      };
+      
+      setHasVideo(true);
+      setIsLoading(false);
+      setStatus(`Test video ready: ${duration.toFixed(1)}s. Press Play to start!`);
+      updateCanvasSize();
+      
+    } catch (error) {
+      setIsLoading(false);
+      setStatus("Failed to load test video.");
+    }
+  }, [stopFrameLoop, stopDirectVideoLoop, updateCanvasSize]);
 
   const loadVideo = useCallback(async () => {
     if (!inputValue.trim()) {
@@ -381,7 +507,7 @@ function YouTubeFrameStudio() {
       setIsLoading(false);
       setStatus("Failed to load video frames.");
     }
-  }, [inputValue, stopFrameLoop, updateCanvasSize, drawFrame]);
+  }, [inputValue, stopFrameLoop, updateCanvasSize, drawFrame, extractFrameFromVideo]);
 
 
   useEffect(() => {
@@ -469,6 +595,17 @@ function YouTubeFrameStudio() {
                 </button>
               </div>
 
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={loadTestVideo}
+                  className="inline-flex w-full items-center justify-center rounded-[14px] bg-green-600/20 px-4 py-3 text-sm font-semibold text-green-400 transition hover:bg-green-600/30 disabled:cursor-not-allowed disabled:bg-white/6"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Loading..." : "🎬 Test Video (Direct Playback)"}
+                </button>
+              </div>
+
               <div className="space-y-2 rounded-[14px] border border-white/12 bg-[#0d0f12] px-4 py-4">
                 <p className="text-xs uppercase tracking-[0.35em] text-white/35">Shortcuts</p>
                 <div className="flex flex-wrap gap-3 text-[11px] uppercase tracking-[0.3em] text-white/45">
@@ -484,6 +621,7 @@ function YouTubeFrameStudio() {
               <div className="space-y-1 text-sm text-[var(--muted)]">
                 <p>Frame precision: 24 fps locked.</p>
                 <p>Optimized for low-glare Tesla displays.</p>
+                {useDirectPlayback && <p className="text-green-400">Direct video mode active</p>}
               </div>
             </aside>
 
