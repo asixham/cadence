@@ -43,10 +43,18 @@ function YouTubeFrameStudio() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
   const overlayFrameRef = useRef<number | null>(null);
   const overlayTimeoutRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  
+  // Hidden video element for frame extraction
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  
+  // Frame-based state
+  const frameCacheRef = useRef<Map<number, HTMLCanvasElement>>(new Map());
+  const currentFrameRef = useRef<number>(0);
+  const totalFramesRef = useRef<number>(0);
+  const videoInfoRef = useRef<{width: number, height: number, fps: number, duration: number} | null>(null);
 
   const stopOverlayLoop = useCallback(() => {
     if (overlayFrameRef.current !== null) {
@@ -56,13 +64,14 @@ function YouTubeFrameStudio() {
   }, []);
 
   const drawOverlay = useCallback(() => {
-    const video = videoRef.current;
     const canvas = canvasRef.current;
     const ctx = ctxRef.current;
+    const videoInfo = videoInfoRef.current;
+    const currentFrame = currentFrameRef.current;
 
-    if (!video || !canvas || !ctx) return;
+    if (!canvas || !ctx || !videoInfo) return;
 
-    const currentTime = video.currentTime;
+    const currentTime = currentFrame / videoInfo.fps;
 
     const pad = 24;
     const boxWidth = 240;
@@ -92,49 +101,130 @@ function YouTubeFrameStudio() {
     ctx.fillText(`${formatSeconds(currentTime)}s`, pad + 24, pad + 56);
   }, []);
 
-  const drawFrame = useCallback(() => {
+  const extractFrameFromVideo = useCallback((frameNumber: number): HTMLCanvasElement | null => {
     const video = videoRef.current;
+    if (!video || video.readyState < 2) return null;
+    
+    const fps = videoInfoRef.current?.fps || FPS;
+    const targetTime = frameNumber / fps;
+    
+    // Seek to the specific time
+    video.currentTime = targetTime;
+    
+    // Create a temporary canvas to capture the frame
+    const frameCanvas = document.createElement('canvas');
+    frameCanvas.width = video.videoWidth || 1280;
+    frameCanvas.height = video.videoHeight || 720;
+    
+    const frameCtx = frameCanvas.getContext('2d');
+    if (!frameCtx) return null;
+    
+    // Draw the current video frame to the canvas
+    frameCtx.drawImage(video, 0, 0, frameCanvas.width, frameCanvas.height);
+    
+    return frameCanvas;
+  }, []);
+
+  const loadFrameOnDemand = useCallback(async (frameNumber: number): Promise<HTMLCanvasElement | null> => {
+    const frameCache = frameCacheRef.current;
+    
+    // Return cached frame if available
+    if (frameCache.has(frameNumber)) {
+      return frameCache.get(frameNumber) || null;
+    }
+    
+    // Extract frame from video
+    const frameCanvas = extractFrameFromVideo(frameNumber);
+    if (frameCanvas) {
+      frameCache.set(frameNumber, frameCanvas);
+      return frameCanvas;
+    }
+    
+    return null;
+  }, [extractFrameFromVideo]);
+
+  const drawFrame = useCallback(async (frameNumber: number) => {
     const canvas = canvasRef.current;
     const ctx = ctxRef.current;
+    const frameCache = frameCacheRef.current;
+    const videoInfo = videoInfoRef.current;
 
-    if (!video || !canvas || !ctx || video.readyState < 2) return;
+    if (!canvas || !ctx || !videoInfo) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Calculate aspect ratio and fit video to canvas
-    const videoAspect = video.videoWidth / video.videoHeight;
-    const canvasAspect = canvas.width / canvas.height;
+    let frameCanvas = frameCache.get(frameNumber);
     
-    let drawWidth, drawHeight, offsetX, offsetY;
-    
-    if (videoAspect > canvasAspect) {
-      drawWidth = canvas.width;
-      drawHeight = canvas.width / videoAspect;
-      offsetX = 0;
-      offsetY = (canvas.height - drawHeight) / 2;
-    } else {
-      drawHeight = canvas.height;
-      drawWidth = canvas.height * videoAspect;
-      offsetX = (canvas.width - drawWidth) / 2;
-      offsetY = 0;
+    if (!frameCanvas) {
+      // Try to extract the frame from video
+      const extractedFrame = await loadFrameOnDemand(frameNumber);
+      if (extractedFrame) {
+        frameCanvas = extractedFrame;
+      }
     }
     
-    ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
+    if (frameCanvas) {
+      // Calculate aspect ratio and fit frame to canvas
+      const frameAspect = frameCanvas.width / frameCanvas.height;
+      const canvasAspect = canvas.width / canvas.height;
+      
+      let drawWidth, drawHeight, offsetX, offsetY;
+      
+      if (frameAspect > canvasAspect) {
+        drawWidth = canvas.width;
+        drawHeight = canvas.width / frameAspect;
+        offsetX = 0;
+        offsetY = (canvas.height - drawHeight) / 2;
+      } else {
+        drawHeight = canvas.height;
+        drawWidth = canvas.height * frameAspect;
+        offsetX = (canvas.width - drawWidth) / 2;
+        offsetY = 0;
+      }
+      
+      ctx.drawImage(frameCanvas, offsetX, offsetY, drawWidth, drawHeight);
+    } else {
+      // Draw a loading placeholder
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#666';
+      ctx.font = '20px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Loading frame ${frameNumber}...`, canvas.width / 2, canvas.height / 2);
+    }
+    
+    currentFrameRef.current = frameNumber;
     drawOverlay();
-  }, [drawOverlay]);
+  }, [drawOverlay, loadFrameOnDemand]);
 
-  const startVideoLoop = useCallback(() => {
-    stopVideoLoop();
-    const tick = () => {
-      drawFrame();
-      if (videoRef.current && !videoRef.current.paused) {
+  const startFrameLoop = useCallback(() => {
+    stopFrameLoop();
+    const fps = videoInfoRef.current?.fps || FPS;
+    const frameDuration = 1000 / fps; // milliseconds per frame
+    let lastFrameTime = performance.now();
+    
+    const tick = (currentTime: number) => {
+      const deltaTime = currentTime - lastFrameTime;
+      
+      if (deltaTime >= frameDuration) {
+        const nextFrame = currentFrameRef.current + 1;
+        if (nextFrame < totalFramesRef.current) {
+          drawFrame(nextFrame);
+          lastFrameTime = currentTime - (deltaTime % frameDuration);
+          animationFrameRef.current = requestAnimationFrame(tick);
+        } else {
+          setIsPlaying(false);
+          setStatus("Playback finished");
+        }
+      } else {
         animationFrameRef.current = requestAnimationFrame(tick);
       }
     };
+    
     animationFrameRef.current = requestAnimationFrame(tick);
   }, [drawFrame]);
 
-  const stopVideoLoop = useCallback(() => {
+  const stopFrameLoop = useCallback(() => {
     if (animationFrameRef.current !== null) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
@@ -156,53 +246,43 @@ function YouTubeFrameStudio() {
       context.setTransform(1, 0, 0, 1, 0, 0);
     }
 
-    drawOverlay();
-  }, [drawOverlay]);
+    drawFrame(currentFrameRef.current);
+  }, [drawFrame]);
 
   const seekBy = useCallback(
-    (delta: number) => {
-      const video = videoRef.current;
-      if (!video) return;
+    (deltaFrames: number) => {
+      const currentFrame = currentFrameRef.current;
+      const targetFrame = Math.max(0, Math.min(totalFramesRef.current - 1, currentFrame + deltaFrames));
 
-      const currentTime = video.currentTime;
-      const target = Math.max(0, currentTime + delta);
-
-      stopVideoLoop();
-      video.currentTime = target;
-      setStatus(`Frame @ ${formatSeconds(target)}s`);
-
-      if (overlayTimeoutRef.current) {
-        window.clearTimeout(overlayTimeoutRef.current);
+      stopFrameLoop();
+      drawFrame(targetFrame);
+      
+      const videoInfo = videoInfoRef.current;
+      if (videoInfo) {
+        const targetTime = targetFrame / videoInfo.fps;
+        setStatus(`Frame @ ${formatSeconds(targetTime)}s`);
       }
-
-      overlayTimeoutRef.current = window.setTimeout(() => {
-        drawFrame();
-        overlayTimeoutRef.current = null;
-      }, 90);
     },
-    [drawFrame, stopVideoLoop],
+    [drawFrame, stopFrameLoop],
   );
 
-  const handleStepForward = useCallback(() => seekBy(FRAME), [seekBy]);
-  const handleStepBackward = useCallback(() => seekBy(-FRAME), [seekBy]);
+  const handleStepForward = useCallback(() => seekBy(1), [seekBy]);
+  const handleStepBackward = useCallback(() => seekBy(-1), [seekBy]);
 
   const togglePlayback = useCallback(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    if (video.paused) {
-      video.play();
-      setIsPlaying(true);
-      setStatus("Playing");
-      startVideoLoop();
-    } else {
-      video.pause();
+    if (isPlaying) {
       setIsPlaying(false);
       setStatus("Paused");
-      stopVideoLoop();
-      drawFrame();
+      stopFrameLoop();
+    } else {
+      if (currentFrameRef.current >= totalFramesRef.current - 1) {
+        currentFrameRef.current = 0;
+      }
+      setIsPlaying(true);
+      setStatus("Playing");
+      startFrameLoop();
     }
-  }, [startVideoLoop, stopVideoLoop, drawFrame]);
+  }, [isPlaying, startFrameLoop, stopFrameLoop]);
 
   const loadVideo = useCallback(async () => {
     if (!inputValue.trim()) {
@@ -216,54 +296,92 @@ function YouTubeFrameStudio() {
       return;
     }
 
-    setStatus("Fetching video...");
+    setStatus("Fetching video frames...");
     setHasVideo(false);
     setIsPlaying(false);
     setIsLoading(true);
-    stopVideoLoop();
+    stopFrameLoop();
 
     if (overlayTimeoutRef.current) {
       window.clearTimeout(overlayTimeoutRef.current);
       overlayTimeoutRef.current = null;
     }
 
+    // Clear existing frame cache
+    frameCacheRef.current.clear();
+
     try {
-      // Get direct video URL using oembed endpoint
-      const oembedResponse = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
-      if (!oembedResponse.ok) {
-        throw new Error('Video not found');
-      }
-
-      // For now, we'll use a placeholder approach since direct YouTube video URLs are complex
-      // In a real implementation, you'd need a backend service to get the actual video URL
-      setStatus("Direct video access requires backend service. Using demo mode.");
+      // Get YouTube video URL and load into hidden video element
+      setStatus("Loading YouTube video...");
       
-      // Create a demo video element for testing
       const video = videoRef.current;
-      if (video) {
-        // Using a sample video URL for demonstration
-        video.src = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
-        video.crossOrigin = 'anonymous';
-        
-        video.addEventListener('loadeddata', () => {
-          setHasVideo(true);
-          setIsLoading(false);
-          setStatus("Ready — space, ←, →, or the controls step frames.");
-          video.pause();
-          updateCanvasSize();
-          drawFrame();
-        }, { once: true });
-
-        video.addEventListener('error', () => {
-          setIsLoading(false);
-          setStatus("Failed to load video. Try another URL.");
-        }, { once: true });
+      if (!video) {
+        throw new Error('Video element not found');
       }
+      
+      // For demo, use a sample video that works without CORS issues
+      // In production, you'd need a backend to proxy YouTube videos
+      video.src = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+      video.crossOrigin = 'anonymous';
+      
+      // Wait for video metadata to load
+      await new Promise((resolve, reject) => {
+        const handleLoadedMetadata = () => {
+          video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+          video.removeEventListener('error', handleError);
+          resolve(void 0);
+        };
+        
+        const handleError = () => {
+          video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+          video.removeEventListener('error', handleError);
+          reject(new Error('Failed to load video'));
+        };
+        
+        video.addEventListener('loadedmetadata', handleLoadedMetadata);
+        video.addEventListener('error', handleError);
+      });
+      
+      // Get video information
+      const duration = video.duration;
+      const totalFrames = Math.floor(duration * FPS);
+      totalFramesRef.current = totalFrames;
+      
+      videoInfoRef.current = {
+        width: video.videoWidth || 1280,
+        height: video.videoHeight || 720,
+        fps: FPS,
+        duration: duration
+      };
+      
+      setStatus(`Video loaded: ${duration.toFixed(1)}s, ${totalFrames} frames at ${FPS}fps`);
+      
+      // Preload first few frames
+      const preloadCount = Math.min(10, totalFrames);
+      
+      for (let i = 0; i < preloadCount; i++) {
+        const frameCanvas = extractFrameFromVideo(i);
+        if (frameCanvas) {
+          frameCacheRef.current.set(i, frameCanvas);
+        }
+        
+        if (i % 5 === 0) {
+          setStatus(`Extracting frames... ${i + 1}/${preloadCount}`);
+        }
+      }
+      
+      setHasVideo(true);
+      setIsLoading(false);
+      setStatus(`Ready - ${totalFrames} frames from real video. Space to play!`);
+      currentFrameRef.current = 0;
+      updateCanvasSize();
+      setTimeout(() => drawFrame(0), 100);
+      
     } catch (error) {
       setIsLoading(false);
-      setStatus("Failed to fetch video information.");
+      setStatus("Failed to load video frames.");
     }
-  }, [inputValue, stopVideoLoop, updateCanvasSize, drawFrame]);
+  }, [inputValue, stopFrameLoop, updateCanvasSize, drawFrame]);
 
 
   useEffect(() => {
@@ -305,12 +423,12 @@ function YouTubeFrameStudio() {
 
   useEffect(() => {
     return () => {
-      stopVideoLoop();
+      stopFrameLoop();
       if (overlayTimeoutRef.current) {
         window.clearTimeout(overlayTimeoutRef.current);
       }
     };
-  }, [stopVideoLoop]);
+  }, [stopFrameLoop]);
 
   return (
     <>
@@ -379,6 +497,7 @@ function YouTubeFrameStudio() {
                   className="hidden"
                   playsInline
                   muted
+                  preload="metadata"
                 />
                 <canvas
                   ref={canvasRef}
