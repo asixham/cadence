@@ -3,6 +3,7 @@ import { ServiceTile } from "./ServiceTile";
 import { AddTileButton } from "./AddTileButton";
 import { motion } from "framer-motion";
 import { Inbox } from "lucide-react";
+import { AppSettings } from "@/app/hooks/useSettings";
 
 interface TileGridProps {
   tiles: string[];
@@ -21,6 +22,7 @@ interface TileGridProps {
   onTouchMove: (e: React.TouchEvent, tileId: string) => void;
   onTouchEnd: (e: React.TouchEvent, tileId: string) => void;
   onAddTile: () => void;
+  settings: AppSettings;
 }
 
 export function TileGrid({
@@ -40,7 +42,16 @@ export function TileGrid({
   onTouchMove,
   onTouchEnd,
   onAddTile,
+  settings,
 }: TileGridProps) {
+  const getAnimationSpeed = () => {
+    switch (settings.animationSpeed) {
+      case 'fast': return { stiffness: 1200, damping: 20 };
+      case 'normal': return { stiffness: 500, damping: 30 };
+      case 'slow': return { stiffness: 300, damping: 40 };
+      default: return { stiffness: 500, damping: 30 };
+    }
+  };
   // Show empty state if no tiles
   if (displayTiles.length === 0) {
     return (
@@ -59,9 +70,15 @@ export function TileGrid({
   }
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="p-4 md:p-6">
-        <div className="grid grid-cols-4 gap-2 md:gap-5">
+    <div className="h-full overflow-y-auto w-full">
+      <div className="p-4 md:p-6 w-full max-w-full">
+        <div
+          className="grid w-full"
+          style={{
+            gridTemplateColumns: `repeat(${settings.columns}, minmax(0, 1fr))`,
+            gap: `${settings.gap}px`,
+          }}
+        >
           {displayTiles.map((tileId) => {
             const service = getService(tileId);
             if (!service) return null;
@@ -73,8 +90,11 @@ export function TileGrid({
                 initial={false}
                 transition={{
                   type: "spring",
-                  stiffness: 500,
-                  damping: 30,
+                  ...getAnimationSpeed(),
+                }}
+                className="w-full"
+                style={{
+                  aspectRatio: '6/3',
                 }}
               >
                 <ServiceTile
@@ -86,7 +106,11 @@ export function TileGrid({
                   onRemove={onRemove}
                   onClick={() => {
                     if (!isEditing && !draggedTile) {
-                      window.open(service.url, '_blank');
+                      if (settings.openInNewTab) {
+                        window.open(service.url, '_blank');
+                      } else {
+                        window.location.href = service.url;
+                      }
                     }
                   }}
                   onDragStart={() => onDragStart(tileId)}
@@ -97,6 +121,7 @@ export function TileGrid({
                   onTouchStart={(e) => onTouchStart(e, tileId)}
                   onTouchMove={(e) => onTouchMove(e, tileId)}
                   onTouchEnd={(e) => onTouchEnd(e, tileId)}
+                  settings={settings}
                 />
               </motion.div>
             );

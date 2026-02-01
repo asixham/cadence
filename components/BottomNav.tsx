@@ -116,7 +116,7 @@ export function BottomNav({ activeCategory, onCategoryChange, isEditing, onToggl
           })}
         </div>
 
-        {/* Right: Date, time, and Edit button */}
+        {/* Right: Edit button */}
         <div className="flex items-center gap-4 min-w-[200px] justify-end">
           <button
             onClick={onToggleEdit}
@@ -144,9 +144,6 @@ export function BottomNav({ activeCategory, onCategoryChange, isEditing, onToggl
               <MdEdit className="w-6 h-6" />
             )}
           </button>
-          <div className="text-white/80 text-lg font-medium text-right">
-            <span className="text-white/40 text-xl font-bold">{dateTime}</span> 
-          </div>
         </div>
       </div>
     </div>

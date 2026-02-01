@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { Input } from "./ui/input";
 
 interface AddServiceModalProps {
   open: boolean;
@@ -69,16 +70,16 @@ export function AddServiceModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-[#252525] border-white/10 text-white max-w-4xl max-h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-white">Add Services</DialogTitle>
+          <DialogTitle className="text-white text-2xl font-semibold">Add Services</DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto">
-          <input
+          <Input
             type="text"
             placeholder="Search services..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none text-white placeholder-white/40 mb-6"
+            className="w-full px-5 py-7 rounded-lg bg-white/5 focus:ring-0 focus:outline-none text-white placeholder-white/40 mb-6"
           />
 
           <div className="space-y-6">
@@ -92,10 +93,10 @@ export function AddServiceModal({
                     <div
                       key={service.id}
                       className={cn(
-                        "flex items-center gap-3 px-4 py-3 rounded-lg border transition cursor-pointer",
+                        "flex items-center gap-3 px-5 py-4 rounded-lg transition cursor-pointer",
                         selectedServices.has(service.id)
-                          ? "bg-white/10 border-white/30"
-                          : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
+                          ? "bg-white/10"
+                          : "bg-white/5 hover:bg-white/10"
                       )}
                       onClick={() => toggleServiceSelection(service.id)}
                     >
@@ -132,9 +133,9 @@ export function AddServiceModal({
 
         <DialogFooter>
           <Button
-            variant="outline"
+            variant="default"
             onClick={handleCancel}
-            className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+            className="bg-white/10 text-white hover:bg-white/20"
           >
             Cancel
           </Button>
@@ -142,6 +143,7 @@ export function AddServiceModal({
             onClick={handleAdd}
             disabled={selectedServices.size === 0}
             className="bg-white text-black hover:bg-white/90"
+            variant="default"
           >
             Add {selectedServices.size > 0 ? `${selectedServices.size} ` : ''}Service{selectedServices.size !== 1 ? 's' : ''}
           </Button>

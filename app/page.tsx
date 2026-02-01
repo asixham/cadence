@@ -7,6 +7,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { useTiles } from "./hooks/useTiles";
 import { useDragAndDrop } from "./hooks/useDragAndDrop";
+import { useSettings } from "./hooks/useSettings";
 import { getService } from "./utils/serviceUtils";
 
 type Category = 'all' | 'streaming' | 'music' | 'games';
@@ -25,6 +26,8 @@ export default function Home() {
     removeTile,
     reorderTiles,
   } = useTiles();
+
+  const { settings, updateSetting, resetSettings } = useSettings();
 
   // Filter tiles by category
   const filteredDisplayTiles = useMemo(() => {
@@ -93,6 +96,7 @@ export default function Home() {
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onAddTile={() => setShowAddModal(true)}
+          settings={settings}
         />
       </div>
 
@@ -108,6 +112,9 @@ export default function Home() {
       <SettingsPanel
         open={showSettings}
         onOpenChange={setShowSettings}
+        settings={settings}
+        updateSetting={updateSetting}
+        resetSettings={resetSettings}
       />
 
       <AddServiceModal

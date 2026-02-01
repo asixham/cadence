@@ -1,6 +1,8 @@
 import { Service } from "@/app/data/services";
 import { getLogoUrl, getFallbackLogoUrl, getSecondFallbackLogoUrl } from "@/app/data/services";
 import { cn } from "@/lib/utils";
+import { MdClose, MdDragIndicator } from "react-icons/md";
+import { AppSettings } from "@/app/hooks/useSettings";
 
 interface ServiceTileProps {
   service: Service;
@@ -18,6 +20,7 @@ interface ServiceTileProps {
   onTouchStart: (e: React.TouchEvent) => void;
   onTouchMove: (e: React.TouchEvent) => void;
   onTouchEnd: (e: React.TouchEvent) => void;
+  settings: AppSettings;
 }
 
 export function ServiceTile({
@@ -36,6 +39,7 @@ export function ServiceTile({
   onTouchStart,
   onTouchMove,
   onTouchEnd,
+  settings,
 }: ServiceTileProps) {
   return (
     <div
@@ -50,7 +54,7 @@ export function ServiceTile({
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
       className={cn(
-        "relative group aspect-[6/3] rounded-xl",
+        "relative group aspect-[6/3] w-full h-full",
         "bg-gradient-to-br from-[#252525] to-[#1e1e1e]",
         "active:scale-95 transition-all duration-300 ease-in-out",
         "cursor-pointer select-none shadow-lg",
@@ -60,6 +64,7 @@ export function ServiceTile({
       )}
       style={{
         transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
+        borderRadius: `${settings.tileBorderRadius}px`,
       }}
       onClick={onClick}
     >
@@ -103,9 +108,11 @@ export function ServiceTile({
             {service.name.charAt(0).toUpperCase()}
           </div>
         </div>
-        <div className="text-[8px] md:text-[9px] font-medium text-white/70 text-center leading-tight px-1 mt-1 line-clamp-2">
-          {service.name}
-        </div>
+        {settings.showTileLabels && (
+          <div className="text-[8px] md:text-[9px] font-medium text-white/70 text-center leading-tight px-1 mt-1 line-clamp-2">
+            {service.name}
+          </div>
+        )}
       </div>
 
       {/* Remove button (when editing) - always visible for touch screens */}
@@ -121,20 +128,20 @@ export function ServiceTile({
             e.preventDefault();
             onRemove(tileId);
           }}
-          className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-red-500/90 hover:bg-red-500 active:bg-red-600 flex items-center justify-center text-white text-sm font-bold z-10 touch-manipulation"
+          className="absolute top-2.5 right-2.5 w-12 h-12 rounded-md bg-red-500/50 hover:bg-red-500 active:bg-red-600 flex items-center justify-center text-white text-sm font-bold z-10 touch-manipulation"
           style={{ 
             WebkitTapHighlightColor: 'transparent',
             touchAction: 'manipulation'
           }}
         >
-          ×
+          <MdClose className="w-8 h-8" />
         </button>
       )}
 
       {/* Drag handle (when editing) - larger for touch */}
       {isEditing && (
-        <div className="absolute top-1.5 left-1.5 w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white/80 text-xs touch-none pointer-events-none">
-          ⋮⋮
+        <div className="absolute top-2.5 left-2.5 w-12 h-12 rounded-md bg-white/10 flex items-center justify-center text-white/80 text-xs touch-none pointer-events-none">
+          <MdDragIndicator className="w-6 h-6" />
         </div>
       )}
     </div>
