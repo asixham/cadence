@@ -52,7 +52,6 @@ export function ServiceTile({
       className={cn(
         "relative group aspect-[6/3] rounded-xl",
         "bg-gradient-to-br from-[#252525] to-[#1e1e1e]",
-        "border border-white/10 hover:border-white/20",
         "active:scale-95 transition-all duration-300 ease-in-out",
         "cursor-pointer select-none shadow-lg",
         isEditing && "cursor-move",
@@ -70,7 +69,7 @@ export function ServiceTile({
           <img
             src={getLogoUrl(service)}
             alt={service.name}
-            className="max-w-[70%] max-h-[60%] object-contain"
+            className="max-w-[70%] max-h-[60%] object-contain rounded-3xl"
             style={{
               imageRendering: 'crisp-edges' as const,
               opacity: 0,

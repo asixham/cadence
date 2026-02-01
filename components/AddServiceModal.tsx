@@ -106,7 +106,7 @@ export function AddServiceModal({
                       <img
                         src={getLogoUrl(service)}
                         alt={service.name}
-                        className="w-6 h-6 object-contain flex-shrink-0"
+                        className="w-6 h-6 object-contain flex-shrink-0 rounded-[7px]"
                         onError={(e) => {
                           const img = e.target as HTMLImageElement;
                           // Try fallbacks

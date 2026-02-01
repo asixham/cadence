@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { TileGrid } from "@/components/TileGrid";
 import { AddServiceModal } from "@/components/AddServiceModal";
 import { BottomNav } from "@/components/BottomNav";
+import { SettingsPanel } from "@/components/SettingsPanel";
 import { useTiles } from "./hooks/useTiles";
 import { useDragAndDrop } from "./hooks/useDragAndDrop";
 import { getService } from "./utils/serviceUtils";
@@ -13,6 +14,7 @@ type Category = 'all' | 'streaming' | 'music' | 'games';
 export default function Home() {
   const [isEditing, setIsEditing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [activeCategory, setActiveCategory] = useState<Category>('all');
 
   const {
@@ -99,6 +101,13 @@ export default function Home() {
         onCategoryChange={setActiveCategory}
         isEditing={isEditing}
         onToggleEdit={() => setIsEditing(!isEditing)}
+        onOpenSettings={() => setShowSettings(true)}
+        isSettingsOpen={showSettings}
+      />
+
+      <SettingsPanel
+        open={showSettings}
+        onOpenChange={setShowSettings}
       />
 
       <AddServiceModal
