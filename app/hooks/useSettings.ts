@@ -12,7 +12,6 @@ export interface AppSettings {
   showTileLabels: boolean;
   
   // Behavior
-  openInNewTab: boolean;
   animationSpeed: 'fast' | 'normal' | 'slow';
 }
 
@@ -22,10 +21,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   columns: 4,
   tileSize: 'medium',
   customTileSize: 120,
-  gap: 20,
+  gap: 24,
   tileBorderRadius: 12,
   showTileLabels: false,
-  openInNewTab: true,
   animationSpeed: 'normal',
 };
 

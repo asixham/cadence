@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { TileGrid } from "@/components/TileGrid";
 import { AddServiceModal } from "@/components/AddServiceModal";
 import { BottomNav } from "@/components/BottomNav";
@@ -8,7 +8,11 @@ import { SettingsPanel } from "@/components/SettingsPanel";
 import { useTiles } from "./hooks/useTiles";
 import { useDragAndDrop } from "./hooks/useDragAndDrop";
 import { useSettings } from "./hooks/useSettings";
+import { useCustomServices } from "./hooks/useCustomServices";
 import { getService } from "./utils/serviceUtils";
+import { isMobileDevice } from "./utils/deviceUtils";
+import { MdErrorOutline } from "react-icons/md";
+import { cn } from "@/lib/utils";
 
 type Category = 'all' | 'streaming' | 'music' | 'games';
 
@@ -17,6 +21,31 @@ export default function Home() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [activeCategory, setActiveCategory] = useState<Category>('all');
+  const [isMobile, setIsMobile] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check if device is mobile
+  useEffect(() => {
+    setIsMobile(isMobileDevice());
+    
+    // Also check on resize in case of device rotation or window resizing
+    const handleResize = () => {
+      setIsMobile(isMobileDevice());
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Track loading state - wait for everything to initialize
+  useEffect(() => {
+    // Wait for next frame to ensure all hooks have initialized and DOM is ready
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const {
     tiles,
@@ -28,6 +57,7 @@ export default function Home() {
   } = useTiles();
 
   const { settings, updateSetting, resetSettings } = useSettings();
+  const { customServices, addCustomService } = useCustomServices();
 
   // Filter tiles by category
   const filteredDisplayTiles = useMemo(() => {
@@ -35,10 +65,14 @@ export default function Home() {
       return displayTiles;
     }
     return displayTiles.filter((tileId) => {
-      const service = getService(tileId);
+      const service = getService(tileId, customServices);
+      // Custom services don't match any specific category, so exclude them when filtering
+      if (tileId.startsWith('custom-')) {
+        return false;
+      }
       return service?.category === activeCategory;
     });
-  }, [displayTiles, activeCategory]);
+  }, [displayTiles, activeCategory, customServices]);
 
   const {
     draggedTile,
@@ -77,12 +111,58 @@ export default function Home() {
   });
 
   return (
-    <main className="h-dvh w-dvw bg-[#0a0a0a] text-white overflow-hidden flex flex-col">
+    <main className="h-dvh w-dvw bg-[#0a0a0a] text-white overflow-hidden flex flex-col relative">
+      {/* Loading spinner - shows until everything is loaded */}
+      {!isMobile && isLoading && (
+        <div 
+          className="fixed inset-0 bg-[#0a0a0a] z-[9998] flex items-center justify-center"
+          style={{ 
+            pointerEvents: 'all',
+          }}
+        >
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative w-16 h-16">
+              <div className="absolute inset-0 border-4 border-white/20 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-transparent border-t-white rounded-full animate-spin"></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile overlay - prevents all interaction */}
+      {isMobile && (
+        <div 
+          className="fixed inset-0 bg-[#0a0a0a] z-[9999] flex items-center justify-center"
+          style={{ 
+            pointerEvents: 'all',
+            touchAction: 'none',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+          }}
+          onClick={(e) => e.preventDefault()}
+          onTouchStart={(e) => e.preventDefault()}
+          onTouchMove={(e) => e.preventDefault()}
+          onTouchEnd={(e) => e.preventDefault()}
+        >
+          <div className="text-center px-8 max-w-md">
+            <div className="flex justify-center mb-6">
+              <MdErrorOutline className="w-16 h-16 text-white/80" />
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              Mobile Not Supported
+            </h1>
+            <p className="text-lg md:text-xl text-white/70 leading-relaxed">
+              This experience is not available on mobile devices. Please access Cadence from your Tesla or another desktop device.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-hidden">
         <TileGrid
           tiles={tiles}
           displayTiles={filteredDisplayTiles}
-          getService={getService}
+          getService={(id) => getService(id, customServices)}
           isEditing={isEditing}
           draggedTile={draggedTile}
           dragOverTile={dragOverTile}
@@ -122,6 +202,8 @@ export default function Home() {
         onOpenChange={setShowAddModal}
         existingTiles={tiles}
         onAdd={addTiles}
+        customServices={customServices}
+        onAddCustomService={addCustomService}
       />
       </main>
   );

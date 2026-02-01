@@ -15,7 +15,7 @@ export function Header({ isEditing, onToggleEdit }: HeaderProps) {
       <Button
         onClick={onToggleEdit}
         variant="outline"
-        className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+        className="bg-white/10 text-white hover:bg-white/20"
       >
         {isEditing ? 'Done' : 'Edit'}
       </Button>

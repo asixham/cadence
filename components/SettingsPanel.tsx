@@ -30,6 +30,7 @@ import {
 import { MdClose, MdGridOn, MdPalette, MdTune, MdSearch, MdSettings, MdRefresh, MdInfo, MdLink, MdWork, MdMic, MdSend } from "react-icons/md";
 import { cn } from "@/lib/utils";
 import { AppSettings } from "@/app/hooks/useSettings";
+import { Button } from "./ui/button";
 
 interface SettingsPanelProps {
   open: boolean;
@@ -209,7 +210,7 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
         ref={contentRef}
         side="left"
         className={cn(
-          "bg-[#1e1e1e] border-white/10 p-0",
+          "bg-[#1e1e1e] p-0",
           "overflow-hidden relative",
           "[&>button]:hidden",
           isDragging && "transition-none"
@@ -221,7 +222,7 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
           left: '0',
           bottom: '80px',
           height: 'calc(100dvh - 105px)',
-          width: '60%',
+          width: '75%',
           maxWidth: 'none',
           zIndex: 60,
         }}
@@ -270,16 +271,17 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                   const Icon = category.icon;
                   const isActive = activeCategory === category.id;
                   return (
-                    <button
+                    <Button
                       key={category.id}
                       onClick={() => setActiveCategory(category.id)}
+                      variant="ghost"
                       onTouchEnd={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         setActiveCategory(category.id);
                       }}
                       className={cn(
-                        "w-full flex items-center gap-4 px-4 py-5 rounded-lg my-1",
+                        "w-full justify-start flex gap-4 px-4 py-5 rounded-lg my-1",
                         "transition-all duration-200 touch-manipulation",
                         "text-left",
                         isActive
@@ -292,9 +294,9 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                         minHeight: '64px',
                       }}
                     >
-                      <Icon className="w-7 h-7 flex-shrink-0" />
-                      <span className="text-lg font-medium">{category.label}</span>
-                    </button>
+                      <Icon className="w-12 h-12" />
+                      <span className="text-xl font-medium">{category.label}</span>
+                    </Button>
                   );
                 })}
               </div>
@@ -323,10 +325,10 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                       <AlertDialogTrigger asChild>
                         <button
                           className={cn(
-                            "flex items-center gap-3 px-6 py-4 rounded-lg w-full",
+                            "flex items-center gap-3 px-6 py-4 rounded-lg",
                             "transition-all duration-200 touch-manipulation",
-                            "bg-red-500/20 border-2 border-red-500/40 text-white",
-                            "hover:bg-red-500/30 hover:border-red-500/60",
+                            "bg-red-500/20 text-white",
+                            "hover:bg-red-500/30",
                             "active:bg-red-500/40"
                           )}
                           style={{
@@ -339,7 +341,7 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                           <span className="text-lg font-medium">Reset to Default</span>
                         </button>
                       </AlertDialogTrigger>
-                      <AlertDialogContent className="bg-[#1e1e1e] border-white/10 text-white max-w-md">
+                      <AlertDialogContent className="bg-[#1e1e1e] text-white max-w-md">
                         <AlertDialogHeader>
                           <AlertDialogTitle className="text-white text-2xl font-semibold">
                             Reset Settings
@@ -352,8 +354,8 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                           <AlertDialogCancel
                             className={cn(
                               "flex-1 sm:flex-initial px-6 py-4 rounded-lg",
-                              "bg-white/5 border-white/10 text-white",
-                              "hover:bg-white/10 hover:border-white/20",
+                              "bg-white/5 text-white",
+                              "hover:bg-white/10",
                               "text-lg font-medium",
                               "touch-manipulation"
                             )}
@@ -369,8 +371,8 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                             onClick={resetSettings}
                             className={cn(
                               "flex-1 sm:flex-initial px-6 py-4 rounded-lg",
-                              "bg-red-500/20 border-2 border-red-500/40 text-white",
-                              "hover:bg-red-500/30 hover:border-red-500/60",
+                              "bg-red-500/20 text-white",
+                              "hover:bg-red-500/30",
                               "text-lg font-medium",
                               "touch-manipulation"
                             )}
@@ -408,10 +410,9 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                           className={cn(
                             "flex flex-col items-center gap-2 p-4 rounded-lg",
                             "transition-all duration-200 touch-manipulation",
-                            "border-2",
                             settings.columns === cols
-                              ? "bg-white/15 border-white/40 text-white"
-                              : "bg-white/5 border-white/10 text-white/60 hover:border-white/20 hover:text-white/80"
+                              ? "bg-white/15 text-white"
+                              : "bg-white/5 text-white/60 hover:text-white/80"
                           )}
                           style={{
                             WebkitTapHighlightColor: 'transparent',
@@ -440,10 +441,10 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                       value={settings.tileSize}
                       onValueChange={(value: AppSettings['tileSize']) => updateSetting('tileSize', value)}
                     >
-                      <SelectTrigger className="w-full bg-white/5 border-white/10 text-white h-14 text-lg">
+                      <SelectTrigger className="w-full bg-white/5 text-white h-14 text-lg">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-[#1e1e1e] border-white/10 z-[100]" style={{ zIndex: 100 }}>
+                      <SelectContent className="bg-[#1e1e1e] z-[100]" style={{ zIndex: 100 }}>
                         <SelectItem value="small" className="text-white text-lg py-3">Small (80px)</SelectItem>
                         <SelectItem value="medium" className="text-white text-lg py-3">Medium (120px)</SelectItem>
                         <SelectItem value="large" className="text-white text-lg py-3">Large (160px)</SelectItem>
@@ -461,10 +462,10 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                         value={settings.customTileSize.toString()}
                         onValueChange={(value) => updateSetting('customTileSize', parseInt(value))}
                       >
-                        <SelectTrigger className="w-full bg-white/5 border-white/10 text-white h-14 text-lg">
+                        <SelectTrigger className="w-full bg-white/5 text-white h-14 text-lg">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-[#1e1e1e] border-white/10 z-[100]" style={{ zIndex: 100 }}>
+                        <SelectContent className="bg-[#1e1e1e] z-[100]" style={{ zIndex: 100 }}>
                           {[60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200].map((size) => (
                             <SelectItem key={size} value={size.toString()} className="text-white text-lg py-3">
                               {size}px
@@ -492,10 +493,9 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                           className={cn(
                             "flex-1 flex flex-col items-center gap-3 p-4 rounded-lg",
                             "transition-all duration-200 touch-manipulation",
-                            "border-2",
                             settings.gap === gap
-                              ? "bg-white/15 border-white/40 text-white"
-                              : "bg-white/5 border-white/10 text-white/60 hover:border-white/20 hover:text-white/80"
+                              ? "bg-white/15 text-white"
+                              : "bg-white/5 text-white/60 hover:text-white/80"
                           )}
                           style={{
                             WebkitTapHighlightColor: 'transparent',
@@ -537,10 +537,9 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                           className={cn(
                             "flex-1 flex flex-col items-center gap-3 p-4 rounded-lg",
                             "transition-all duration-200 touch-manipulation",
-                            "border-2",
                             settings.tileBorderRadius === radius
-                              ? "bg-white/15 border-white/40 text-white"
-                              : "bg-white/5 border-white/10 text-white/60 hover:border-white/20 hover:text-white/80"
+                              ? "bg-white/15 text-white"
+                              : "bg-white/5 text-white/60 hover:text-white/80"
                           )}
                           style={{
                             WebkitTapHighlightColor: 'transparent',
@@ -548,7 +547,7 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                           }}
                         >
                           <div
-                            className="w-20 h-12 bg-gradient-to-br from-[#252525] to-[#1e1e1e] border border-white/20"
+                            className="w-20 h-12 bg-gradient-to-br from-[#252525] to-[#1e1e1e]"
                             style={{ borderRadius: `${radius}px` }}
                           />
                           <span className="text-base font-medium">{radius}px</span>
@@ -575,20 +574,6 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
 
               {activeCategory === 'behavior' && (
                 <div className="space-y-8">
-                  <div className="flex items-center justify-between py-4">
-                    <div className="flex-1">
-                      <label className="text-white/80 text-xl font-medium block">
-                        Open in New Tab
-                      </label>
-                      <p className="text-white/60 text-base mt-2">Open links in a new browser tab</p>
-                    </div>
-                    <Switch
-                      checked={settings.openInNewTab}
-                      onCheckedChange={(checked) => updateSetting('openInNewTab', checked)}
-                      className="scale-125"
-                    />
-                  </div>
-
                   <div>
                     <label className="text-white/80 text-xl font-medium mb-4 block">
                       Animation Speed
@@ -597,10 +582,10 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                       value={settings.animationSpeed}
                       onValueChange={(value: AppSettings['animationSpeed']) => updateSetting('animationSpeed', value)}
                     >
-                      <SelectTrigger className="w-full bg-white/5 border-white/10 text-white h-14 text-lg">
+                      <SelectTrigger className="w-full bg-white/5 text-white h-14 text-lg">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-[#1e1e1e] border-white/10 z-[100]" style={{ zIndex: 100 }}>
+                      <SelectContent className="bg-[#1e1e1e] z-[100]" style={{ zIndex: 100 }}>
                         <SelectItem value="fast" className="text-white text-lg py-3">Fast</SelectItem>
                         <SelectItem value="normal" className="text-white text-lg py-3">Normal</SelectItem>
                         <SelectItem value="slow" className="text-white text-lg py-3">Slow</SelectItem>
@@ -631,8 +616,8 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                         rel="noopener noreferrer"
                         className={cn(
                           "flex items-center justify-center w-10 h-10 rounded-lg",
-                          "bg-white/5 border border-white/10",
-                          "hover:bg-white/10 hover:border-white/20",
+                          "bg-white/5",
+                          "hover:bg-white/10",
                           "transition-all duration-200 touch-manipulation",
                           "text-white"
                         )}
@@ -649,8 +634,8 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                         rel="noopener noreferrer"
                         className={cn(
                           "flex items-center justify-center w-10 h-10 rounded-lg",
-                          "bg-white/5 border border-white/10",
-                          "hover:bg-white/10 hover:border-white/20",
+                          "bg-white/5",
+                          "hover:bg-white/10",
                           "transition-all duration-200 touch-manipulation",
                           "text-white"
                         )}
@@ -679,17 +664,17 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
 
                   {/* Feedback Button */}
                   <div className="pt-4">
-                    <button
+                    <Button
                       onClick={() => setShowFeedbackDialog(true)}
+                      variant="default"
                       onTouchEnd={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         setShowFeedbackDialog(true);
                       }}
                       className={cn(
-                        "w-full flex items-center gap-3 px-6 py-4 rounded-lg",
-                        "bg-white/5 border border-white/10",
-                        "hover:bg-white/10 hover:border-white/20",
+                        "bg-white/10 hover:bg-white/20 flex gap-3 px-6 py-4 rounded-lg",
+                        "justify-start",
                         "transition-all duration-200 touch-manipulation",
                         "text-white"
                       )}
@@ -701,7 +686,7 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                     >
                       <MdSend className="w-6 h-6 text-white/80" />
                       <span className="text-lg font-medium">Send Feedback</span>
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -713,7 +698,7 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
       {/* Feedback Dialog */}
       <Dialog open={showFeedbackDialog} onOpenChange={setShowFeedbackDialog}>
         <DialogContent 
-          className="bg-[#1e1e1e] border-white/10 text-white max-w-2xl"
+          className="bg-[#1e1e1e] text-white max-w-2xl"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <DialogHeader>
@@ -750,20 +735,21 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                 value={feedbackEmail}
                 onChange={(e) => setFeedbackEmail(e.target.value)}
                 placeholder="your.email@example.com"
-                className="w-full bg-white/5 border-white/10 text-white placeholder-white/40 focus:border-white/30 h-14 text-base"
+                className="w-full bg-white/5 text-white placeholder-white/40 focus:ring-0 focus:outline-none h-14 text-base"
               />
             </div>
 
             <div className="flex items-center gap-3">
-              <button
+              <Button
                 onClick={handleVoiceInput}
                 disabled={isRecording}
+                variant="default"
                 className={cn(
-                  "flex items-center gap-2 px-4 py-3 rounded-lg",
+                  "flex items-center gap-2",
                   "transition-all duration-200 touch-manipulation",
                   isRecording
-                    ? "bg-red-500/20 border-2 border-red-500/40 text-white"
-                    : "bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20"
+                    ? "bg-red-500/20 text-white"
+                    : "bg-white/10 hover:bg-white/20 text-white"
                 )}
                 style={{
                   WebkitTapHighlightColor: 'transparent',
@@ -774,7 +760,7 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                 <span className="text-base font-medium">
                   {isRecording ? "Recording..." : "Use Microphone"}
                 </span>
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -782,8 +768,8 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
             <DialogClose
               className={cn(
                 "px-6 py-4 rounded-lg",
-                "bg-white/5 border border-white/10 text-white",
-                "hover:bg-white/10 hover:border-white/20",
+                "bg-white/5 text-white",
+                "hover:bg-white/10",
                 "text-lg font-medium touch-manipulation"
               )}
               style={{
@@ -794,13 +780,13 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
             >
               Cancel
             </DialogClose>
-            <button
+            <Button
               onClick={handleSubmitFeedback}
               disabled={!feedbackMessage.trim() || isSubmitting}
+              variant="default"
               className={cn(
-                "px-6 py-4 rounded-lg",
-                "bg-white/15 border-2 border-white/30 text-white",
-                "hover:bg-white/20 hover:border-white/40",
+                "bg-white/15 text-white",
+                "hover:bg-white/20",
                 "disabled:opacity-50 disabled:cursor-not-allowed",
                 "text-lg font-medium touch-manipulation"
               )}
@@ -811,7 +797,7 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
               }}
             >
               {isSubmitting ? "Sending..." : "Send Feedback"}
-            </button>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

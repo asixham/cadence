@@ -45,3 +45,14 @@ button, a {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
+
+/* Remove all focus/active outlines except for keyboard navigation */
+*:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+*:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
