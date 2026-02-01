@@ -9,9 +9,9 @@ const barlow = Barlow({
 });
 
 export const metadata: Metadata = {
-  title: "Cadence Frame Studio",
+  title: "Cadence",
   description:
-    "Tesla-friendly frame stepping studio with YouTube overlay controls.",
+    "Your entertainment hub - streaming services, music, web apps, and games.",
 };
 
 export default function RootLayout({
