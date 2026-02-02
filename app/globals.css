@@ -46,13 +46,33 @@ button, a {
   touch-action: manipulation;
 }
 
-/* Remove all focus/active outlines except for keyboard navigation */
-*:focus:not(:focus-visible) {
+/* Remove ALL outlines - no exceptions */
+* {
+  outline: none !important;
+}
+
+*:focus,
+*:focus-visible,
+*:active,
+*:hover {
   outline: none !important;
   box-shadow: none !important;
 }
 
-*:active {
-  outline: none !important;
-  box-shadow: none !important;
+/* Remove borders from interactive elements unless explicitly set */
+button:not([class*="border"]),
+input:not([class*="border"]),
+select:not([class*="border"]),
+textarea:not([class*="border"]),
+a:not([class*="border"]) {
+  border: none !important;
 }
+
+button:focus,
+input:focus,
+select:focus,
+textarea:focus,
+a:focus {
+  border: none !important;
+}
+

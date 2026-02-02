@@ -4,7 +4,6 @@ import { AddTileButton } from "./AddTileButton";
 import { motion } from "framer-motion";
 import { Inbox } from "lucide-react";
 import { AppSettings } from "@/app/hooks/useSettings";
-import { openWithYouTubeRedirect } from "@/app/utils/navigationUtils";
 
 interface TileGridProps {
   tiles: string[];
@@ -24,6 +23,7 @@ interface TileGridProps {
   onTouchEnd: (e: React.TouchEvent, tileId: string) => void;
   onAddTile: () => void;
   settings: AppSettings;
+  onLaunchInIframe?: (url: string) => void;
 }
 
 export function TileGrid({
@@ -44,6 +44,7 @@ export function TileGrid({
   onTouchEnd,
   onAddTile,
   settings,
+  onLaunchInIframe,
 }: TileGridProps) {
   const getAnimationSpeed = () => {
     switch (settings.animationSpeed) {
@@ -107,7 +108,12 @@ export function TileGrid({
                   onRemove={onRemove}
                   onClick={() => {
                     if (!isEditing && !draggedTile) {
-                      openWithYouTubeRedirect(service.url);
+                      if (settings.launchInIframe && onLaunchInIframe) {
+                        onLaunchInIframe(service.url);
+                      } else {
+                        // Open URL directly without YouTube redirect
+                        window.location.href = service.url;
+                      }
                     }
                   }}
                   onDragStart={() => onDragStart(tileId)}

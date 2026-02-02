@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { MdGridOn, MdTv, MdMusicNote, MdSportsEsports, MdEdit, MdCheck, MdSettings, MdFullscreen } from "react-icons/md";
+import { MdGridOn, MdTv, MdMusicNote, MdSportsEsports, MdEdit, MdCheck, MdSettings, MdFullscreen, MdHome, MdKeyboardArrowDown } from "react-icons/md";
 import { isFullscreen, getAppUrl } from "@/app/utils/navigationUtils";
 import {
   AlertDialog,
@@ -23,9 +24,13 @@ interface BottomNavProps {
   onToggleEdit: () => void;
   onOpenSettings: () => void;
   isSettingsOpen: boolean;
+  isIframeMode?: boolean;
+  onHome?: () => void;
+  onHideNav?: () => void;
+  onCategoryClick?: (category: Category) => void;
 }
 
-export function BottomNav({ activeCategory, onCategoryChange, isEditing, onToggleEdit, onOpenSettings, isSettingsOpen }: BottomNavProps) {
+export function BottomNav({ activeCategory, onCategoryChange, isEditing, onToggleEdit, onOpenSettings, isSettingsOpen, isIframeMode = false, onHome, onHideNav, onCategoryClick }: BottomNavProps) {
   const [isInFullscreen, setIsInFullscreen] = useState(false);
   
   const categories: { id: Category; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -96,122 +101,121 @@ export function BottomNav({ activeCategory, onCategoryChange, isEditing, onToggl
   }, []);
 
   return (
-    <div className="w-full bg-black py-3 px-6 relative z-50">
+    <motion.div
+      className="w-full bg-black py-6 px-6 relative z-50"
+      initial={{ y: "100%" }}
+      animate={{ y: 0 }}
+      exit={{ y: "100%" }}
+      transition={{ duration: 0.1, ease: "easeInOut" }}
+    >
       <div className="flex items-center justify-between w-full">
-        {/* Left: Settings button and Fullscreen button */}
+        {/* Left: Home button (iframe mode) or Settings button and Fullscreen button */}
         <div className="flex items-center gap-4 min-w-[200px]">
-          {!isInFullscreen && (
-            <AlertDialog open={showFullscreenDialog} onOpenChange={setShowFullscreenDialog}>
-              <AlertDialogTrigger asChild>
-                <button
-                  onTouchEnd={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setShowFullscreenDialog(true);
-                  }}
-                  className={cn(
-                    "flex items-center justify-center p-2 rounded-md",
-                    "transition-all duration-200 touch-manipulation",
-                    "min-w-[60px] min-h-[60px]",
-                    "text-white/60 hover:text-white/80 active:text-white"
-                  )}
-                  style={{
-                    WebkitTapHighlightColor: 'transparent',
-                    touchAction: 'manipulation'
-                  }}
-                >
-                  <MdFullscreen className="w-8 h-8" />
-                </button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="bg-[#1e1e1e] text-white max-w-md">
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="text-white text-2xl font-semibold">
-                    Enter Fullscreen Mode
-                  </AlertDialogTitle>
-                  <AlertDialogDescription className="text-white/60 text-base">
-                    After clicking "Go to site" on the next page, the app will open in fullscreen mode.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter className="flex-row gap-3 sm:justify-end">
-                  <AlertDialogCancel
-                    className={cn(
-                      "flex-1 sm:flex-initial px-6 py-4 rounded-lg",
-                      "bg-white/5 text-white",
-                      "hover:bg-white/10",
-                      "text-lg font-medium",
-                      "touch-manipulation"
-                    )}
-                    style={{
-                      WebkitTapHighlightColor: 'transparent',
-                      touchAction: 'manipulation',
-                      minHeight: '56px',
-                    }}
-                  >
-                    Cancel
-                  </AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleFullscreenConfirm}
-                    className={cn(
-                      "flex-1 sm:flex-initial px-6 py-4 rounded-lg",
-                      "bg-white/10 text-white",
-                      "hover:bg-white/20",
-                      "text-lg font-medium",
-                      "touch-manipulation"
-                    )}
-                    style={{
-                      WebkitTapHighlightColor: 'transparent',
-                      touchAction: 'manipulation',
-                      minHeight: '56px',
-                    }}
-                  >
-                    Continue
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-          <button
-            onClick={onOpenSettings}
-            onTouchEnd={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onOpenSettings();
-            }}
-            className={cn(
-              "flex items-center justify-center p-2 rounded-md",
-              "transition-all duration-200 touch-manipulation",
-              "min-w-[60px] min-h-[60px]",
-              isSettingsOpen
-                ? "bg-white/15 text-white"
-                : "text-white/60 hover:text-white/80 active:text-white"
-            )}
-            style={{
-              WebkitTapHighlightColor: 'transparent',
-              touchAction: 'manipulation'
-            }}
-          >
-            <MdSettings className="w-8 h-8" />
-          </button>
-        </div>
-
-        {/* Middle: Category icons in pill-shaped container */}
-        <div className="flex items-center gap-16 rounded-md px-2 py-3">
-          {categories.map((category) => {
-            const Icon = category.icon;
-            return (
+          {isIframeMode && onHome ? (
+            <button
+              onClick={onHome}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onHome();
+              }}
+              className={cn(
+                "flex items-center justify-center p-2 rounded-md",
+                "transition-all duration-200 touch-manipulation",
+                "min-w-[60px] min-h-[60px]",
+                "text-white/60 hover:text-white/80 active:text-white"
+              )}
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation'
+              }}
+            >
+              <MdHome className="w-8 h-8" />
+            </button>
+          ) : (
+            <>
+              {!isInFullscreen && (
+                <AlertDialog open={showFullscreenDialog} onOpenChange={setShowFullscreenDialog}>
+                  <AlertDialogTrigger asChild>
+                    <button
+                      onTouchEnd={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowFullscreenDialog(true);
+                      }}
+                      className={cn(
+                        "flex items-center justify-center p-2 rounded-md",
+                        "transition-all duration-200 touch-manipulation",
+                        "min-w-[60px] min-h-[60px]",
+                        "text-white/60 hover:text-white/80 active:text-white"
+                      )}
+                      style={{
+                        WebkitTapHighlightColor: 'transparent',
+                        touchAction: 'manipulation'
+                      }}
+                    >
+                      <MdFullscreen className="w-8 h-8" />
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="bg-[#1e1e1e] text-white max-w-md">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="text-white text-2xl font-semibold">
+                        Enter Fullscreen Mode
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className="text-white/60 text-base">
+                        After clicking "Go to site" on the next page, the app will open in fullscreen mode.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="flex-row gap-3 sm:justify-end">
+                      <AlertDialogCancel
+                        className={cn(
+                          "flex-1 sm:flex-initial px-6 py-4 rounded-lg",
+                          "bg-white/5 text-white",
+                          "hover:bg-white/10",
+                          "text-lg font-medium",
+                          "touch-manipulation"
+                        )}
+                        style={{
+                          WebkitTapHighlightColor: 'transparent',
+                          touchAction: 'manipulation',
+                          minHeight: '56px',
+                        }}
+                      >
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleFullscreenConfirm}
+                        className={cn(
+                          "flex-1 sm:flex-initial px-6 py-4 rounded-lg",
+                          "bg-white/10 text-white",
+                          "hover:bg-white/20",
+                          "text-lg font-medium",
+                          "touch-manipulation"
+                        )}
+                        style={{
+                          WebkitTapHighlightColor: 'transparent',
+                          touchAction: 'manipulation',
+                          minHeight: '56px',
+                        }}
+                      >
+                        Continue
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
               <button
-                key={category.id}
-                onClick={() => onCategoryChange(category.id)}
+                onClick={onOpenSettings}
                 onTouchEnd={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onCategoryChange(category.id);
+                  onOpenSettings();
                 }}
                 className={cn(
                   "flex items-center justify-center p-2 rounded-md",
                   "transition-all duration-200 touch-manipulation",
                   "min-w-[60px] min-h-[60px]",
-                  activeCategory === category.id
+                  isSettingsOpen
                     ? "bg-white/15 text-white"
                     : "text-white/60 hover:text-white/80 active:text-white"
                 )}
@@ -220,43 +224,113 @@ export function BottomNav({ activeCategory, onCategoryChange, isEditing, onToggl
                   touchAction: 'manipulation'
                 }}
               >
-                <Icon className="w-8 h-8" />
+                <MdSettings className="w-8 h-8" />
               </button>
+            </>
+          )}
+        </div>
+
+        {/* Middle: Category icons in pill-shaped container - always centered */}
+        <div className="flex items-center gap-16 rounded-md px-2 py-3 absolute left-1/2 -translate-x-1/2">
+          {categories.map((category, index) => {
+            const Icon = category.icon;
+            // Place arrow after the middle icon (for 4 icons, after index 1)
+            const isMiddle = index === Math.floor((categories.length - 1) / 2);
+            return (
+              <Fragment key={category.id}>
+                <button
+                  onClick={() => {
+                    if (onCategoryClick) {
+                      onCategoryClick(category.id);
+                    } else {
+                      onCategoryChange(category.id);
+                    }
+                  }}
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (onCategoryClick) {
+                      onCategoryClick(category.id);
+                    } else {
+                      onCategoryChange(category.id);
+                    }
+                  }}
+                  className={cn(
+                    "flex items-center justify-center p-2 rounded-md",
+                    "transition-all duration-200 touch-manipulation",
+                    "min-w-[60px] min-h-[60px]",
+                    !isIframeMode && activeCategory === category.id
+                      ? "bg-white/15 text-white"
+                      : "text-white/60 hover:text-white/80 active:text-white"
+                  )}
+                  style={{
+                    WebkitTapHighlightColor: 'transparent',
+                    touchAction: 'manipulation'
+                  }}
+                >
+                  <Icon className="w-8 h-8" />
+                </button>
+                {/* Down arrow in middle when in iframe mode */}
+                {isIframeMode && onHideNav && isMiddle && (
+                  <button
+                    onClick={onHideNav}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onHideNav();
+                    }}
+                    className={cn(
+                      "flex items-center justify-center p-2 rounded-md",
+                      "transition-all duration-200 touch-manipulation",
+                      "min-w-[60px] min-h-[60px]",
+                      "text-white/60 hover:text-white/80 active:text-white"
+                    )}
+                    style={{
+                      WebkitTapHighlightColor: 'transparent',
+                      touchAction: 'manipulation'
+                    }}
+                  >
+                    <MdKeyboardArrowDown className="w-8 h-8" />
+                  </button>
+                )}
+              </Fragment>
             );
           })}
         </div>
 
-        {/* Right: Edit button */}
-        <div className="flex items-center gap-4 min-w-[200px] justify-end">
-          <button
-            onClick={onToggleEdit}
-            onTouchEnd={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onToggleEdit();
-            }}
-            className={cn(
-              "flex items-center justify-center p-2 rounded-md",
-              "transition-all duration-200 touch-manipulation",
-              "min-w-[60px] min-h-[60px]",
-              isEditing
-                ? "bg-white/15 text-white"
-                : "text-white/60 hover:text-white/80 active:text-white"
-            )}
-            style={{
-              WebkitTapHighlightColor: 'transparent',
-              touchAction: 'manipulation'
-            }}
-          >
-            {isEditing ? (
-              <MdCheck className="w-8 h-8" />
-            ) : (
-              <MdEdit className="w-8 h-8" />
-            )}
-          </button>
-        </div>
+        {/* Right: Edit button - hidden in iframe mode */}
+        {!isIframeMode && (
+          <div className="flex items-center gap-4 min-w-[200px] justify-end">
+            <button
+              onClick={onToggleEdit}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggleEdit();
+              }}
+              className={cn(
+                "flex items-center justify-center p-2 rounded-md",
+                "transition-all duration-200 touch-manipulation",
+                "min-w-[60px] min-h-[60px]",
+                isEditing
+                  ? "bg-white/15 text-white"
+                  : "text-white/60 hover:text-white/80 active:text-white"
+              )}
+              style={{
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation'
+              }}
+            >
+              {isEditing ? (
+                <MdCheck className="w-8 h-8" />
+              ) : (
+                <MdEdit className="w-8 h-8" />
+              )}
+            </button>
+          </div>
+        )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 

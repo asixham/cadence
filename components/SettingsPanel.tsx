@@ -31,6 +31,7 @@ import { MdClose, MdGridOn, MdPalette, MdTune, MdSearch, MdSettings, MdRefresh, 
 import { cn } from "@/lib/utils";
 import { AppSettings } from "@/app/hooks/useSettings";
 import { Button } from "./ui/button";
+import { BetaBadge } from "./BetaBadge";
 
 interface SettingsPanelProps {
   open: boolean;
@@ -238,7 +239,7 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
       >
         <div className="h-full flex flex-col overflow-hidden">
           {/* Search bar at top */}
-          <div className="px-6 pt-6 pb-4 border-b border-white/10 flex-shrink-0">
+          <div className="px-6 pt-6 pb-4 flex-shrink-0">
             <div className="relative">
               <MdSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-7 h-7 text-white/60" />
               <Input
@@ -592,6 +593,57 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                       </SelectContent>
                     </Select>
                   </div>
+
+                  <div className="space-y-6">
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <label className="text-white/80 text-xl font-medium">
+                            App Embedding
+                          </label>
+                          <BetaBadge />
+                        </div>
+                        <Switch
+                          checked={settings.launchInIframe}
+                          onCheckedChange={(checked) => updateSetting('launchInIframe', checked)}
+                          className="scale-125"
+                        />
+                      </div>
+                      <p className="text-white/60 text-base">
+                        Launch apps within Cadence instead of navigating away. Not all apps support this feature.
+                      </p>
+                    </div>
+
+                    <div className={cn(
+                      "flex items-center justify-between py-4 pl-4 border-l-2 transition-colors",
+                      settings.launchInIframe 
+                        ? "border-white/20" 
+                        : "border-white/5 opacity-50"
+                    )}>
+                      <div className="flex-1">
+                        <label 
+                          className={cn(
+                            "text-white/80 text-xl font-medium block",
+                            !settings.launchInIframe && "text-white/40"
+                          )}
+                        >
+                          Show Embedding Warning
+                        </label>
+                        <p className={cn(
+                          "text-white/60 text-base mt-2",
+                          !settings.launchInIframe && "text-white/30"
+                        )}>
+                          Display a warning when launching embeddable apps about potential blocked links
+                        </p>
+                      </div>
+                      <Switch
+                        checked={settings.showEmbeddingWarning}
+                        onCheckedChange={(checked) => updateSetting('showEmbeddingWarning', checked)}
+                        disabled={!settings.launchInIframe}
+                        className="scale-125"
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -650,7 +702,7 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                   </div>
                   
                   {/* Divider */}
-                  <div className="border-t border-white/10 my-8" />
+                  <div className="my-8" />
 
                   {/* Description */}
                   <div className="space-y-4">

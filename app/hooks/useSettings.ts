@@ -13,6 +13,8 @@ export interface AppSettings {
   
   // Behavior
   animationSpeed: 'fast' | 'normal' | 'slow';
+  launchInIframe: boolean;
+  showEmbeddingWarning: boolean; // Show warning when launching embeddable apps
 }
 
 const STORAGE_KEY = 'cadence-settings';
@@ -25,6 +27,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   tileBorderRadius: 12,
   showTileLabels: false,
   animationSpeed: 'normal',
+  launchInIframe: false,
+  showEmbeddingWarning: true, // Default to true (show warning by default)
 };
 
 export function useSettings() {

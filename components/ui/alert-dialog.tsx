@@ -15,37 +15,46 @@ const AlertDialogPortal = AlertDialogPrimitive.Portal
 const AlertDialogOverlay = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Overlay>
->(({ className, ...props }, ref) => (
-  <AlertDialogPrimitive.Overlay
-    className={cn(
-      "fixed inset-0 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-      "bottom-[80px]",
-      className
-    )}
-    style={{ zIndex: 70 }}
-    {...props}
-    ref={ref}
-  />
-))
+>(({ className, style, ...props }, ref) => {
+  // Get z-index from props if provided, otherwise use default
+  const zIndex = (style as any)?.zIndex || 70;
+  const overlayZIndex = (zIndex as number) - 1;
+  return (
+    <AlertDialogPrimitive.Overlay
+      className={cn(
+        "fixed inset-0 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+        "bottom-[80px]",
+        className
+      )}
+      style={{ ...style, zIndex: overlayZIndex }}
+      {...props}
+      ref={ref}
+    />
+  );
+})
 AlertDialogOverlay.displayName = AlertDialogPrimitive.Overlay.displayName
 
 const AlertDialogContent = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content>
->(({ className, ...props }, ref) => (
-  <AlertDialogPortal>
-    <AlertDialogOverlay />
-    <AlertDialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        "fixed left-[50%] top-[50%] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 bg-[#1e1e1e] p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 rounded-lg",
-        className
-      )}
-      style={{ zIndex: 71 }}
-      {...props}
-    />
-  </AlertDialogPortal>
-))
+>(({ className, style, ...props }, ref) => {
+  const contentZIndex = (style as any)?.zIndex || 71;
+  const overlayZIndex = (contentZIndex as number) - 1;
+  return (
+    <AlertDialogPortal>
+      <AlertDialogOverlay style={{ zIndex: overlayZIndex }} />
+      <AlertDialogPrimitive.Content
+        ref={ref}
+        className={cn(
+          "fixed left-[50%] top-[50%] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 bg-[#1e1e1e] p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 rounded-lg",
+          className
+        )}
+        style={{ ...style, zIndex: contentZIndex }}
+        {...props}
+      />
+    </AlertDialogPortal>
+  );
+})
 AlertDialogContent.displayName = AlertDialogPrimitive.Content.displayName
 
 const AlertDialogHeader = ({

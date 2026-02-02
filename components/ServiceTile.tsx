@@ -60,7 +60,7 @@ export function ServiceTile({
         "cursor-pointer select-none shadow-lg",
         isEditing && "cursor-move",
         isDragged && "opacity-50 scale-95 z-50",
-        isDragOver && "ring-2 ring-white/30 scale-105 border-white/40"
+        isDragOver && "scale-105"
       )}
       style={{
         transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
