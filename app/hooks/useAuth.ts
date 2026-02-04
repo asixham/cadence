@@ -36,10 +36,15 @@ export function useAuth() {
     return { data, error };
   };
 
-  const signUpWithEmail = async (email: string, password: string) => {
+  const signUpWithEmail = async (email: string, password: string, displayName?: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          full_name: displayName || '',
+        },
+      },
     });
     return { data, error };
   };

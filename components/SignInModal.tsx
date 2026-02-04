@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/app/hooks/useAuth";
-import { MdEmail, MdLock } from "react-icons/md";
+import { MdEmail, MdLock, MdPerson } from "react-icons/md";
 import Image from "next/image";
 
 interface SignInModalProps {
@@ -25,6 +25,7 @@ interface SignInModalProps {
 export function SignInModal({ open, onOpenChange, onSignInSuccess }: SignInModalProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState("");
   const [isEmailLoading, setIsEmailLoading] = useState(false);
@@ -36,7 +37,7 @@ export function SignInModal({ open, onOpenChange, onSignInSuccess }: SignInModal
     setIsEmailLoading(true);
     try {
       const { error } = isSignUp
-        ? await signUpWithEmail(email, password)
+        ? await signUpWithEmail(email, password, displayName)
         : await signInWithEmail(email, password);
 
       if (error) {
@@ -46,6 +47,7 @@ export function SignInModal({ open, onOpenChange, onSignInSuccess }: SignInModal
         onOpenChange(false);
         setEmail("");
         setPassword("");
+        setDisplayName("");
         setError("");
       }
     } catch (err: any) {
@@ -80,12 +82,30 @@ export function SignInModal({ open, onOpenChange, onSignInSuccess }: SignInModal
           </DialogTitle>
         </DialogHeader>
         <DialogDescription className="text-white/60 text-base">
-            {isSignUp
-              ? "Create an account to sync your settings"
-              : "Sign in to sync your settings across devices"}
+            {isSignUp && "Create an account to sync your settings to the cloud"}
           </DialogDescription>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4">
+          {isSignUp && (
+            <div>
+              <label htmlFor="displayName" className="text-white/80 text-base font-medium mb-2 block">
+                Display name (First and Last name)
+              </label>
+              <div className="relative">
+                <MdPerson className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                <Input
+                  id="displayName"
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Enter your first and last name"
+                  className="w-full pl-10 bg-white/5 text-white placeholder-white/40 focus:ring-0 focus:outline-none h-14 text-base"
+                  autoFocus={false}
+                />
+              </div>
+            </div>
+          )}
+
           <div>
             <label htmlFor="email" className="text-white/80 text-base font-medium mb-2 block">
               Email
@@ -132,7 +152,7 @@ export function SignInModal({ open, onOpenChange, onSignInSuccess }: SignInModal
 
           <Button
             onClick={handleEmailSignIn}
-            disabled={isEmailLoading || isTeslaLoading || !email || !password}
+            disabled={isEmailLoading || isTeslaLoading || !email || !password || (isSignUp && !displayName.trim())}
             className={cn(
               "w-full bg-white text-black hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed",
               "h-14 text-lg font-medium flex items-center justify-center gap-2"
@@ -189,17 +209,16 @@ export function SignInModal({ open, onOpenChange, onSignInSuccess }: SignInModal
             )}
           </Button>
 
-          <div className="text-center">
-            <button
+            <Button
               onClick={() => {
                 setIsSignUp(!isSignUp);
                 setError("");
-              }}
-              className="text-white/60 hover:text-white/80 text-sm underline"
+                setDisplayName("");
+                }}
+              className="w-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-lg font-medium flex items-center justify-center gap-2"
             >
               {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
-            </button>
-          </div>
+            </Button>
         </div>
       </DialogContent>
     </Dialog>

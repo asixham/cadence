@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 type Category = 'all' | 'streaming' | 'music' | 'games';
+const ICON_SIZE = 'w-10 h-10';
 
 interface BottomNavProps {
   activeCategory: Category;
@@ -154,7 +155,7 @@ export function BottomNav({ activeCategory, onCategoryChange, isEditing, onToggl
                         touchAction: 'manipulation'
                       }}
                     >
-                      <MdFullscreen className="w-8 h-8" />
+                      <MdFullscreen className={ICON_SIZE} />
                     </button>
                   </AlertDialogTrigger>
                   <AlertDialogContent className="bg-[#1e1e1e] text-white max-w-md">
@@ -224,7 +225,7 @@ export function BottomNav({ activeCategory, onCategoryChange, isEditing, onToggl
                   touchAction: 'manipulation'
                 }}
               >
-                <MdSettings className="w-8 h-8" />
+                <MdSettings className={ICON_SIZE} />
               </button>
             </>
           )}
@@ -268,7 +269,7 @@ export function BottomNav({ activeCategory, onCategoryChange, isEditing, onToggl
                     touchAction: 'manipulation'
                   }}
                 >
-                  <Icon className="w-8 h-8" />
+                  <Icon className={ICON_SIZE} />
                 </button>
                 {/* Down arrow in middle when in iframe mode */}
                 {isIframeMode && onHideNav && isMiddle && (
@@ -290,7 +291,7 @@ export function BottomNav({ activeCategory, onCategoryChange, isEditing, onToggl
                       touchAction: 'manipulation'
                     }}
                   >
-                    <MdKeyboardArrowDown className="w-8 h-8" />
+                    <MdKeyboardArrowDown className={ICON_SIZE} />
                   </button>
                 )}
               </Fragment>
@@ -322,9 +323,9 @@ export function BottomNav({ activeCategory, onCategoryChange, isEditing, onToggl
               }}
             >
               {isEditing ? (
-                <MdCheck className="w-8 h-8" />
+                <MdCheck className={ICON_SIZE} />
               ) : (
-                <MdEdit className="w-8 h-8" />
+                <MdEdit className={ICON_SIZE} />
               )}
             </button>
           </div>

@@ -48,4 +48,4 @@ scripts/sign-tesla.js
 tesla-private-key.pem
 
 # supabase
-supabase/.temp
+lib/supabase/.temp

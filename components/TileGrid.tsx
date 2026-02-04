@@ -48,10 +48,10 @@ export function TileGrid({
 }: TileGridProps) {
   const getAnimationSpeed = () => {
     switch (settings.animationSpeed) {
-      case 'fast': return { stiffness: 1200, damping: 20 };
-      case 'normal': return { stiffness: 500, damping: 30 };
-      case 'slow': return { stiffness: 300, damping: 40 };
-      default: return { stiffness: 500, damping: 30 };
+      case 'fast': return { stiffness: 1200, damping: 50 };
+      case 'normal': return { stiffness: 500, damping: 50 };
+      case 'slow': return { stiffness: 300, damping: 50 };
+      default: return { stiffness: 500, damping: 50 };
     }
   };
   // Show empty state if no tiles

@@ -404,7 +404,7 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                     <label className="text-white/80 text-xl font-medium mb-4 block">
                       Columns per Row
                     </label>
-                    <div className="grid grid-cols-4 gap-3">
+                    <div className="flex flex-wrap gap-3">
                       {[3, 4, 5, 6].map((cols) => (
                         <button
                           key={cols}
@@ -448,7 +448,7 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                       value={settings.tileSize}
                       onValueChange={(value: AppSettings['tileSize']) => updateSetting('tileSize', value)}
                     >
-                      <SelectTrigger className="w-full bg-white/5 text-white h-14 text-lg">
+                      <SelectTrigger className="w-fit bg-white/5 text-white h-14 text-lg">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-[#1e1e1e] z-[100]" style={{ zIndex: 100 }}>
@@ -469,7 +469,7 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                         value={settings.customTileSize.toString()}
                         onValueChange={(value) => updateSetting('customTileSize', parseInt(value))}
                       >
-                        <SelectTrigger className="w-full bg-white/5 text-white h-14 text-lg">
+                        <SelectTrigger className="w-fit bg-white/5 text-white h-14 text-lg">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-[#1e1e1e] z-[100]" style={{ zIndex: 100 }}>
@@ -487,7 +487,7 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                     <label className="text-white/80 text-xl font-medium mb-4 block">
                       Gap Between Tiles
                     </label>
-                    <div className="flex gap-4">
+                    <div className="flex flex-wrap gap-4">
                       {[8, 16, 24, 32].map((gap) => (
                         <button
                           key={gap}
@@ -531,7 +531,7 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                     <label className="text-white/80 text-xl font-medium mb-4 block">
                       Tile Border Radius
                     </label>
-                    <div className="flex gap-4">
+                    <div className="flex flex-wrap gap-4">
                       {[0, 8, 12, 16].map((radius) => (
                         <button
                           key={radius}
@@ -589,7 +589,7 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                       value={settings.animationSpeed}
                       onValueChange={(value: AppSettings['animationSpeed']) => updateSetting('animationSpeed', value)}
                     >
-                      <SelectTrigger className="w-full bg-white/5 text-white h-14 text-lg">
+                      <SelectTrigger className="w-fit bg-white/5 text-white h-14 text-lg">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-[#1e1e1e] z-[100]" style={{ zIndex: 100 }}>
