@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
 import { TileGrid } from "@/components/TileGrid";
 import { AddServiceModal } from "@/components/AddServiceModal";
@@ -12,6 +12,7 @@ import { useTiles } from "./hooks/useTiles";
 import { useDragAndDrop } from "./hooks/useDragAndDrop";
 import { useSettings } from "./hooks/useSettings";
 import { useCustomServices } from "./hooks/useCustomServices";
+import { useAuth } from "./hooks/useAuth";
 import { getService } from "./utils/serviceUtils";
 import { isMobileDevice } from "./utils/deviceUtils";
 import { openWithYouTubeRedirect } from "./utils/navigationUtils";
@@ -61,16 +62,6 @@ export default function Home() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Track loading state - wait for everything to initialize
-  useEffect(() => {
-    // Wait for next frame to ensure all hooks have initialized and DOM is ready
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   const {
     tiles,
     displayTiles,
@@ -78,10 +69,39 @@ export default function Home() {
     addTiles,
     removeTile,
     reorderTiles,
+    syncTiles,
+    isLoading: isLoadingTiles,
   } = useTiles();
 
   const { settings, updateSetting, resetSettings } = useSettings();
   const { customServices, addCustomService } = useCustomServices();
+  const { user, loading: isLoadingAuth } = useAuth();
+
+  // Track loading state - wait for everything to initialize
+  useEffect(() => {
+    // Wait for:
+    // 1. Auth to finish loading
+    // 2. Tiles to finish loading from server (if user is signed in)
+    // 3. Initial component mount
+    if (!isLoadingAuth && !isLoadingTiles) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoadingAuth, isLoadingTiles]);
+  
+  // Sync tiles when user exits edit mode
+  const prevIsEditing = useRef(isEditing);
+  useEffect(() => {
+    // Only sync when transitioning from editing to not editing
+    if (prevIsEditing.current && !isEditing) {
+      // User just exited edit mode, sync tiles immediately
+      syncTiles();
+    }
+    prevIsEditing.current = isEditing;
+  }, [isEditing, syncTiles]);
 
   // Filter tiles by category
   const filteredDisplayTiles = useMemo(() => {

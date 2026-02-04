@@ -27,11 +27,13 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
-import { MdClose, MdGridOn, MdPalette, MdTune, MdSearch, MdSettings, MdRefresh, MdInfo, MdLink, MdWork, MdMic, MdSend } from "react-icons/md";
+import { MdClose, MdGridOn, MdPalette, MdTune, MdSearch, MdSettings, MdRefresh, MdInfo, MdLink, MdWork, MdMic, MdSend, MdAccountCircle, MdLogout } from "react-icons/md";
 import { cn } from "@/lib/utils";
 import { AppSettings } from "@/app/hooks/useSettings";
 import { Button } from "./ui/button";
 import { BetaBadge } from "./BetaBadge";
+import { useAuth } from "@/app/hooks/useAuth";
+import { SignInModal } from "./SignInModal";
 
 interface SettingsPanelProps {
   open: boolean;
@@ -41,7 +43,7 @@ interface SettingsPanelProps {
   resetSettings: () => void;
 }
 
-type SettingsCategory = 'layout' | 'appearance' | 'behavior' | 'general' | 'about';
+type SettingsCategory = 'layout' | 'appearance' | 'behavior' | 'general' | 'about' | 'account';
 
 export function SettingsPanel({ open, onOpenChange, settings, updateSetting, resetSettings }: SettingsPanelProps) {
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>('layout');
@@ -53,10 +55,13 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
   const [feedbackEmail, setFeedbackEmail] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSignInModal, setShowSignInModal] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const recognitionRef = useRef<any>(null);
   const startX = useRef(0);
   const startY = useRef(0);
   const contentRef = useRef<HTMLDivElement>(null);
+  const { user, signOut } = useAuth();
 
   const handleTouchStart = (e: React.TouchEvent) => {
     // Don't start dragging if touch is on an interactive element (slider, button, etc.)
@@ -197,6 +202,7 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
     { id: 'layout', label: 'Layout', icon: MdGridOn },
     { id: 'appearance', label: 'Appearance', icon: MdPalette },
     { id: 'behavior', label: 'Behavior', icon: MdTune },
+    { id: 'account', label: 'Account', icon: MdAccountCircle },
     { id: 'general', label: 'General', icon: MdSettings },
     { id: 'about', label: 'About', icon: MdInfo },
   ];
@@ -647,6 +653,94 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
                 </div>
               )}
 
+              {activeCategory === 'account' && (
+                <div className="space-y-8">
+                  {!user ? (
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-white/80 text-xl font-medium mb-2">
+                          Sign In to Sync Settings
+                        </h3>
+                        <p className="text-white/60 text-base">
+                          Create an account or sign in to sync your settings across all your devices.
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => setShowSignInModal(true)}
+                        className={cn(
+                          "bg-white/10 hover:bg-white/20 flex gap-3 px-6 py-4 rounded-lg",
+                          "justify-center",
+                          "transition-all duration-200 touch-manipulation",
+                          "text-white"
+                        )}
+                        style={{
+                          WebkitTapHighlightColor: 'transparent',
+                          touchAction: 'manipulation',
+                          minHeight: '56px',
+                        }}
+                      >
+                        <MdAccountCircle className="w-7 h-7" />
+                        <span className="text-lg font-medium">Sign In</span>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {/* Profile Header with Icon and Name */}
+                      <div className="flex items-center gap-4 pb-6 border-b border-white/10">
+                        <div className="flex-shrink-0">
+                            <MdAccountCircle className="w-16 h-16 text-white/80" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-white text-xl font-semibold truncate">
+                            {user.user_metadata?.full_name || 'User'}
+                          </h3>
+                          <p className="text-white/60 text-base truncate mt-1">
+                            {user.email}
+                          </p>
+                        </div>
+                      </div>
+                      {/* Sign Out Button */}
+                      <Button
+                        onClick={async () => {
+                          setIsSigningOut(true);
+                          try {
+                            await signOut();
+                          } finally {
+                            setIsSigningOut(false);
+                          }
+                        }}
+                        disabled={isSigningOut}
+                        className={cn(
+                          "bg-red-500/20 hover:bg-red-500/30 flex gap-3 px-6 py-4 rounded-lg",
+                          "justify-center",
+                          "transition-all duration-200 touch-manipulation",
+                          "text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        )}
+                        style={{
+                          WebkitTapHighlightColor: 'transparent',
+                          touchAction: 'manipulation',
+                          minHeight: '56px',
+                        }}
+                      >
+                        {isSigningOut ? (
+                          <>
+                            <div className="relative w-7 h-7">
+                              <div className="absolute inset-0 border-2 border-white/20 rounded-full"></div>
+                              <div className="absolute inset-0 border-2 border-transparent border-t-white rounded-full animate-spin"></div>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <MdLogout className="w-7 h-7" />
+                            <span className="text-lg font-medium">Sign Out</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {activeCategory === 'about' && (
                 <div className="space-y-8">
                   {/* Cadence Logo and Version */}
@@ -853,6 +947,14 @@ export function SettingsPanel({ open, onOpenChange, settings, updateSetting, res
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <SignInModal
+        open={showSignInModal}
+        onOpenChange={setShowSignInModal}
+        onSignInSuccess={() => {
+          // Settings will be synced automatically via useSettings hook
+        }}
+      />
     </Sheet>
   );
 }
