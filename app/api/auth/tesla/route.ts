@@ -1,21 +1,30 @@
 import { NextResponse } from 'next/server'
 
-const TESLA_REDIRECT_URI = 'https://splashy-frieda-vibrationless.ngrok-free.dev/api/auth/tesla/callback'
+// Get redirect URI based on request origin
+// If NGROK_URL is set and origin is localhost, use ngrok URL
+// Otherwise use the request origin
+function getRedirectUri(origin: string): string {
+  const ngrokUrl = process.env.NGROK_URL
+  // If we have ngrok URL and origin is localhost, use ngrok
+  if (ngrokUrl && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+    return `${ngrokUrl}/api/auth/tesla/callback`
+  }
+  return `${origin}/api/auth/tesla/callback`
+}
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const origin = requestUrl.origin
+  const redirectUri = getRedirectUri(origin)
   
   // Generate state for CSRF protection
   const state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
-
-  console.log(encodeURIComponent(TESLA_REDIRECT_URI))
   
   // Store state in a cookie or session (simplified here)
   const response = NextResponse.redirect(
     `https://auth.tesla.com/oauth2/v3/authorize?` +
     `client_id=${process.env.NEXT_PUBLIC_TESLA_CLIENT_ID}&` +
-    `redirect_uri=${encodeURIComponent(TESLA_REDIRECT_URI)}&` +
+    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
     `response_type=code&` +
     `scope=openid%20user_data%20offline_access&` +
     `state=${state}`

@@ -3,25 +3,57 @@ import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 
-const TESLA_CLIENT_ID = 'ec7f3f07-6c27-420a-a23b-c9c48bc629ad'
-const TESLA_CLIENT_SECRET = 'ta-secret.KRnPvc1rk%wvLgwX'
-const TESLA_REDIRECT_URI = 'https://splashy-frieda-vibrationless.ngrok-free.dev/api/auth/tesla/callback'
-const PUBLIC_URL = 'https://splashy-frieda-vibrationless.ngrok-free.dev'
+const TESLA_CLIENT_ID = process.env.NEXT_PUBLIC_TESLA_CLIENT_ID
+const TESLA_CLIENT_SECRET = process.env.TESLA_CLIENT_SECRET
+
+// Get redirect URI based on request origin
+// If NGROK_URL is set and origin is localhost, use ngrok URL
+// Otherwise use the request origin
+function getRedirectUri(origin: string): string {
+  const ngrokUrl = process.env.NGROK_URL
+  // If we have ngrok URL and origin is localhost, use ngrok
+  if (ngrokUrl && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+    return `${ngrokUrl}/api/auth/tesla/callback`
+  }
+  return `${origin}/api/auth/tesla/callback`
+}
+
+// Get public URL for redirects
+// If NGROK_URL is set and origin is localhost, use ngrok URL
+// Otherwise use the request origin
+function getPublicUrl(origin: string): string {
+  const ngrokUrl = process.env.NGROK_URL
+  // If we have ngrok URL and origin is localhost, use ngrok
+  if (ngrokUrl && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+    return ngrokUrl
+  }
+  return origin
+}
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
+  const origin = requestUrl.origin
   const code = requestUrl.searchParams.get('code')
   const state = requestUrl.searchParams.get('state')
   const cookieStore = await cookies()
   const storedState = cookieStore.get('tesla_oauth_state')?.value
 
+  const redirectUri = getRedirectUri(origin)
+  const publicUrl = getPublicUrl(origin)
+
   // Verify state
   if (!state || state !== storedState) {
-    return NextResponse.redirect(new URL('/?error=invalid_state', PUBLIC_URL))
+    return NextResponse.redirect(new URL('/?error=invalid_state', publicUrl))
   }
 
   if (!code) {
-    return NextResponse.redirect(new URL('/?error=no_code', PUBLIC_URL))
+    return NextResponse.redirect(new URL('/?error=no_code', publicUrl))
+  }
+
+  // Validate required environment variables
+  if (!TESLA_CLIENT_ID || !TESLA_CLIENT_SECRET) {
+    console.error('Missing Tesla OAuth credentials')
+    return NextResponse.redirect(new URL('/?error=missing_credentials', publicUrl))
   }
 
   try {
@@ -36,14 +68,14 @@ export async function GET(request: Request) {
         client_id: TESLA_CLIENT_ID,
         client_secret: TESLA_CLIENT_SECRET,
         code: code,
-        redirect_uri: TESLA_REDIRECT_URI,
+        redirect_uri: redirectUri,
       }),
     })
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text()
       console.error('Token exchange failed:', errorText)
-      return NextResponse.redirect(new URL(`/?error=token_exchange_failed&details=${encodeURIComponent(errorText)}`, PUBLIC_URL))
+      return NextResponse.redirect(new URL(`/?error=token_exchange_failed&details=${encodeURIComponent(errorText)}`, publicUrl))
     }
 
     const tokenData = await tokenResponse.json()
@@ -62,7 +94,7 @@ export async function GET(request: Request) {
         console.log('ID token data:', idTokenData)
       } catch (e) {
         console.error('Failed to decode ID token:', e)
-        return NextResponse.redirect(new URL('/?error=invalid_token', PUBLIC_URL))
+        return NextResponse.redirect(new URL('/?error=invalid_token', publicUrl))
       }
     }
 
@@ -82,12 +114,12 @@ export async function GET(request: Request) {
         const errorText = await fleetApiResponse.text()
         console.warn('Fleet API call failed:', fleetApiResponse.status, errorText)
         // If Fleet API fails, we can't proceed - we need this data
-        return NextResponse.redirect(new URL('/?error=fleet_api_failed', PUBLIC_URL))
+        return NextResponse.redirect(new URL('/?error=fleet_api_failed', publicUrl))
       }
     } catch (apiError) {
       console.error('Error fetching user data from Fleet API:', apiError)
       // If Fleet API fails, we can't proceed - we need this data
-      return NextResponse.redirect(new URL('/?error=fleet_api_error', PUBLIC_URL))
+      return NextResponse.redirect(new URL('/?error=fleet_api_error', publicUrl))
     }
 
     // Extract data from Fleet API response structure
@@ -97,7 +129,7 @@ export async function GET(request: Request) {
     
     if (!fleetUserData) {
       console.error('Invalid Fleet API response structure:', fleetApiData)
-      return NextResponse.redirect(new URL('/?error=invalid_fleet_response', PUBLIC_URL))
+      return NextResponse.redirect(new URL('/?error=invalid_fleet_response', publicUrl))
     }
 
     // Use email from Fleet API - this is required and is the real email
@@ -106,14 +138,14 @@ export async function GET(request: Request) {
     
     if (!email || !email.includes('@')) {
       console.error('No valid email from Fleet API. Response:', fleetUserData)
-      return NextResponse.redirect(new URL('/?error=no_email_from_fleet', PUBLIC_URL))
+      return NextResponse.redirect(new URL('/?error=no_email_from_fleet', publicUrl))
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       console.error('Invalid email format:', email)
-      return NextResponse.redirect(new URL(`/?error=invalid_email&email=${encodeURIComponent(email)}`, PUBLIC_URL))
+      return NextResponse.redirect(new URL(`/?error=invalid_email&email=${encodeURIComponent(email)}`, publicUrl))
     }
 
     console.log('Processing user with email from Fleet API:', email)
@@ -122,7 +154,7 @@ export async function GET(request: Request) {
     // Use Admin API to handle user creation/sign-in
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error('SUPABASE_SERVICE_ROLE_KEY not set')
-      return NextResponse.redirect(new URL('/?error=server_config', PUBLIC_URL))
+      return NextResponse.redirect(new URL('/?error=server_config', publicUrl))
     }
 
     const adminClient = createAdminClient(
@@ -140,7 +172,7 @@ export async function GET(request: Request) {
     const { data: usersData, error: listError } = await adminClient.auth.admin.listUsers()
     if (listError) {
       console.error('Error listing users:', listError)
-      return NextResponse.redirect(new URL('/?error=list_users_failed', PUBLIC_URL))
+      return NextResponse.redirect(new URL('/?error=list_users_failed', publicUrl))
     }
 
     const existingUser = usersData?.users?.find(u => u.email === email)
@@ -162,7 +194,7 @@ export async function GET(request: Request) {
 
       if (updateError) {
         console.error('Error updating user:', updateError)
-        return NextResponse.redirect(new URL('/?error=update_user_failed', PUBLIC_URL))
+        return NextResponse.redirect(new URL('/?error=update_user_failed', publicUrl))
       }
     } else {
       // Create new user - use data from Fleet API
@@ -189,7 +221,7 @@ export async function GET(request: Request) {
 
       if (createError || !createData.user) {
         console.error('Error creating user:', createError)
-        return NextResponse.redirect(new URL('/?error=create_user_failed', PUBLIC_URL))
+        return NextResponse.redirect(new URL('/?error=create_user_failed', publicUrl))
       }
 
       userId = createData.user.id
@@ -204,7 +236,7 @@ export async function GET(request: Request) {
 
     if (sessionError || !sessionData) {
       console.error('Error generating session:', sessionError)
-      return NextResponse.redirect(new URL('/?error=session_failed', PUBLIC_URL))
+      return NextResponse.redirect(new URL('/?error=session_failed', publicUrl))
     }
 
     // Extract the token from the magic link
@@ -213,7 +245,7 @@ export async function GET(request: Request) {
 
     if (!token) {
       console.error('No token in magic link')
-      return NextResponse.redirect(new URL('/?error=no_token', PUBLIC_URL))
+      return NextResponse.redirect(new URL('/?error=no_token', publicUrl))
     }
 
     // Use the regular client to exchange the token for a session
@@ -226,16 +258,16 @@ export async function GET(request: Request) {
     if (authError) {
       console.error('Error verifying token:', authError)
       // Fallback: redirect to sign in page with email
-      return NextResponse.redirect(new URL(`/?tesla_signin=success&email=${encodeURIComponent(email)}`, PUBLIC_URL))
+      return NextResponse.redirect(new URL(`/?tesla_signin=success&email=${encodeURIComponent(email)}`, publicUrl))
     }
 
     // Success - user is signed in
-    const response = NextResponse.redirect(new URL('/?tesla_signin=success', PUBLIC_URL))
+    const response = NextResponse.redirect(new URL('/?tesla_signin=success', publicUrl))
     response.cookies.delete('tesla_oauth_state')
     return response
 
   } catch (error: any) {
     console.error('Tesla OAuth error:', error)
-    return NextResponse.redirect(new URL(`/?error=oauth_failed&details=${encodeURIComponent(error.message || 'Unknown error')}`, PUBLIC_URL))
+    return NextResponse.redirect(new URL(`/?error=oauth_failed&details=${encodeURIComponent(error.message || 'Unknown error')}`, publicUrl))
   }
 }
