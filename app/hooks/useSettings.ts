@@ -133,13 +133,6 @@ export function useSettings() {
     }
   }, [settings, user]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      syncManager.cleanup();
-    };
-  }, []);
-
   const updateSetting = <K extends keyof AppSettings>(
     key: K,
     value: AppSettings[K]

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { randomBytes } from 'crypto'
 
 // Get redirect URI based on request origin
 // If NGROK_URL is set and origin is localhost, use ngrok URL
@@ -18,7 +19,7 @@ export async function GET(request: Request) {
   const redirectUri = getRedirectUri(origin)
   
   // Generate state for CSRF protection
-  const state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+  const state = randomBytes(32).toString('hex')
   
   // Store state in a cookie or session (simplified here)
   const response = NextResponse.redirect(

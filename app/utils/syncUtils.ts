@@ -15,6 +15,11 @@ class SyncManager {
    * Sync tiles to server
    */
   async syncTiles(tiles: string[], userId: string | null, options: SyncOptions = {}) {
+    // Don't sync during initial load
+    if (this.isInitialLoad) {
+      return;
+    }
+
     // Only sync to server if user is signed in
     if (!userId) {
       return;
@@ -52,6 +57,11 @@ class SyncManager {
    * Sync settings to server
    */
   async syncSettings(settings: any, userId: string | null, options: SyncOptions = {}) {
+    // Don't sync during initial load
+    if (this.isInitialLoad) {
+      return;
+    }
+
     // Only sync to server if user is signed in
     if (!userId) {
       return;

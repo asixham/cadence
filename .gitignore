@@ -46,3 +46,6 @@ scripts/sign-tesla.js
 
 # tesla keys
 tesla-private-key.pem
+
+# supabase
+supabase/.temp

@@ -159,13 +159,6 @@ export function useTiles() {
     }
   }, [tiles]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      syncManager.cleanup();
-    };
-  }, []);
-
   const addTiles = (newTileIds: string[]) => {
     setTiles(prev => [...prev, ...newTileIds]);
   };

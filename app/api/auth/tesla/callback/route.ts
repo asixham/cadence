@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { randomBytes } from 'crypto'
 
 const TESLA_CLIENT_ID = process.env.NEXT_PUBLIC_TESLA_CLIENT_ID
 const TESLA_CLIENT_SECRET = process.env.TESLA_CLIENT_SECRET
@@ -184,22 +185,45 @@ export async function GET(request: Request) {
       console.log('User exists, updating:', existingUser.id)
       userId = existingUser.id
       
+      // Update user metadata (without sensitive token)
+      // Remove tesla_access_token from metadata if it exists (migration cleanup)
+      const { tesla_access_token, ...cleanMetadata } = existingUser.user_metadata || {}
+      
       const { error: updateError } = await adminClient.auth.admin.updateUserById(userId, {
         email_confirm: true,
-        user_metadata: {
-          ...existingUser.user_metadata, // Preserve existing metadata
-          tesla_access_token: tokenData.access_token, // Update access token
-        }
+        user_metadata: cleanMetadata, // Preserve existing metadata without token
       })
 
       if (updateError) {
         console.error('Error updating user:', updateError)
         return NextResponse.redirect(new URL('/?error=update_user_failed', publicUrl))
       }
+
+      // Store token securely in database table (server-side only)
+      const expiresAt = tokenData.expires_in 
+        ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
+        : null
+
+      const { error: tokenUpdateError } = await adminClient
+        .from('tesla_user_access_tokens')
+        .upsert({
+          user_id: userId,
+          tesla_access_token: tokenData.access_token,
+          tesla_refresh_token: tokenData.refresh_token || null,
+          expires_at: expiresAt,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id'
+        })
+
+      if (tokenUpdateError) {
+        console.error('Error storing token:', tokenUpdateError)
+        // Don't fail the flow, but log the error
+      }
     } else {
       // Create new user - use data from Fleet API
       console.log('Creating new user with Fleet API data')
-      const randomPassword = Math.random().toString(36) + Math.random().toString(36) + Math.random().toString(36)
+      const randomPassword = randomBytes(32).toString('hex')
       
       // Extract name from Fleet API response
       const fullName = fleetUserData.full_name || 'Tesla User'
@@ -213,7 +237,7 @@ export async function GET(request: Request) {
         user_metadata: {
           full_name: fullName,
           tesla_id: idTokenData.sub,
-          tesla_access_token: tokenData.access_token,
+          // DO NOT store tesla_access_token in user_metadata (security risk)
           vault_uuid: fleetUserData.vault_uuid,
           profile_image_url: fleetUserData.profile_image_url,
         }
@@ -226,6 +250,25 @@ export async function GET(request: Request) {
 
       userId = createData.user.id
       console.log('User created:', userId)
+
+      // Store token securely in database table (server-side only)
+      const expiresAt = tokenData.expires_in 
+        ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
+        : null
+
+      const { error: tokenInsertError } = await adminClient
+        .from('tesla_user_access_tokens')
+        .insert({
+          user_id: userId,
+          tesla_access_token: tokenData.access_token,
+          tesla_refresh_token: tokenData.refresh_token || null,
+          expires_at: expiresAt,
+        })
+
+      if (tokenInsertError) {
+        console.error('Error storing token:', tokenInsertError)
+        // Don't fail the flow, but log the error
+      }
     }
 
     // Generate a session for the user
